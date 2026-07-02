@@ -1,7 +1,7 @@
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Calendar, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { mockBlogPosts } from "@/data/mock";
+import { useBlogPost, useRelatedPosts } from "@/hooks/useSupabase";
 
 function formatDate(dateStr: string) {
     const date = new Date(dateStr);
@@ -14,9 +14,22 @@ function formatDate(dateStr: string) {
 
 export default function BlogDetail() {
     const { id } = useParams();
-    const post = mockBlogPosts.find((p) => p.id === Number(id));
+    const { post, loading } = useBlogPost(Number(id));
+    const { posts: related } = useRelatedPosts(Number(id));
 
-    const related = mockBlogPosts.filter((p) => p.id !== Number(id)).slice(0, 2);
+    if (loading) {
+        return (
+            <div className="animate-pulse">
+                <div className="h-72 bg-muted md:h-96" />
+                <div className="mx-auto max-w-3xl px-4 py-12 md:px-8">
+                    <div className="h-6 bg-muted rounded w-1/3 mb-4" />
+                    <div className="h-4 bg-muted rounded mb-3" />
+                    <div className="h-4 bg-muted rounded mb-3 w-5/6" />
+                    <div className="h-4 bg-muted rounded w-4/6" />
+                </div>
+            </div>
+        );
+    }
 
     if (!post) {
         return (
@@ -37,7 +50,7 @@ export default function BlogDetail() {
         <div>
             <div className="relative h-72 overflow-hidden bg-muted md:h-96">
                 <img
-                    src={post.coverImage}
+                    src={post.cover_image}
                     alt={post.title}
                     className="h-full w-full object-cover"
                 />
@@ -60,7 +73,7 @@ export default function BlogDetail() {
                 <div className="flex items-center gap-6 mb-10 text-sm text-muted-foreground">
                     <span className="flex items-center gap-2">
                         <Calendar className="h-4 w-4" />
-                        {formatDate(post.publishedAt)}
+                        {formatDate(post.published_at)}
                     </span>
                     <span className="flex items-center gap-2">
                         <Tag className="h-4 w-4" />
@@ -68,12 +81,9 @@ export default function BlogDetail() {
                     </span>
                 </div>
 
-                <div className="prose-custom">
+                <div>
                     {paragraphs.map((paragraph, index) => (
-                        <p
-                            key={index}
-                            className="mb-6 text-base leading-relaxed text-foreground/80"
-                        >
+                        <p key={index} className="mb-6 text-base leading-relaxed text-foreground/80">
                             {paragraph}
                         </p>
                     ))}
@@ -104,7 +114,7 @@ export default function BlogDetail() {
                                 >
                                     <div className="h-20 w-28 flex-shrink-0 overflow-hidden rounded-lg bg-muted">
                                         <img
-                                            src={rpost.coverImage}
+                                            src={rpost.cover_image}
                                             alt={rpost.title}
                                             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                                         />
@@ -117,7 +127,7 @@ export default function BlogDetail() {
                                             {rpost.title}
                                         </h3>
                                         <p className="mt-1 text-xs text-muted-foreground">
-                                            {formatDate(rpost.publishedAt)}
+                                            {formatDate(rpost.published_at)}
                                         </p>
                                     </div>
                                 </Link>

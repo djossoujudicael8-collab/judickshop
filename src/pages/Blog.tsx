@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { mockBlogPosts } from "@/data/mock";
+import { useBlogPosts } from "@/hooks/useSupabase";
 
 function formatDate(dateStr: string) {
     const date = new Date(dateStr);
@@ -11,6 +11,8 @@ function formatDate(dateStr: string) {
 }
 
 export default function Blog() {
+    const { posts, loading } = useBlogPosts();
+
     return (
         <div>
             <section className="bg-accent">
@@ -25,42 +27,50 @@ export default function Blog() {
             </section>
 
             <section className="mx-auto max-w-7xl px-4 py-16 md:px-8">
-                <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-                    {mockBlogPosts.map((post) => (
-                        <Link
-                            key={post.id}
-                            to={"/blog/" + post.id}
-                            className="group block overflow-hidden rounded-xl bg-card shadow-premium transition-shadow hover:shadow-premium-lg"
-                        >
-                            <div className="aspect-video overflow-hidden bg-muted">
-                                <img
-                                    src={post.coverImage}
-                                    alt={post.title}
-                                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                />
-                            </div>
-                            <div className="p-6">
-                                <div className="flex items-center gap-3 mb-3">
-                                    <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                                        {post.category}
-                                    </span>
-                                    <span className="text-xs text-muted-foreground">
-                                        {formatDate(post.publishedAt)}
+                {loading ? (
+                    <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+                        {Array.from({ length: 3 }).map((_, i) => (
+                            <div key={i} className="animate-pulse rounded-xl bg-muted aspect-[4/3]" />
+                        ))}
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+                        {posts.map((post) => (
+                            <Link
+                                key={post.id}
+                                to={"/blog/" + post.id}
+                                className="group block overflow-hidden rounded-xl bg-card shadow-premium transition-shadow hover:shadow-premium-lg"
+                            >
+                                <div className="aspect-video overflow-hidden bg-muted">
+                                    <img
+                                        src={post.cover_image}
+                                        alt={post.title}
+                                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                    />
+                                </div>
+                                <div className="p-6">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                                            {post.category}
+                                        </span>
+                                        <span className="text-xs text-muted-foreground">
+                                            {formatDate(post.published_at)}
+                                        </span>
+                                    </div>
+                                    <h2 className="font-display text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
+                                        {post.title}
+                                    </h2>
+                                    <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
+                                        {post.excerpt}
+                                    </p>
+                                    <span className="mt-4 inline-block text-sm font-medium text-primary">
+                                        Lire la suite
                                     </span>
                                 </div>
-                                <h2 className="font-display text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
-                                    {post.title}
-                                </h2>
-                                <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
-                                    {post.excerpt}
-                                </p>
-                                <span className="mt-4 inline-block text-sm font-medium text-primary">
-                                    Lire la suite
-                                </span>
-                            </div>
-                        </Link>
-                    ))}
-                </div>
+                            </Link>
+                        ))}
+                    </div>
+                )}
             </section>
         </div>
     );

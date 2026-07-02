@@ -4,13 +4,47 @@ import { Button } from "@/components/ui/button";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import ProductCard from "@/components/ProductCard";
 import { useCart } from "@/stores/useCart";
-import { mockProducts } from "@/data/mock";
+import { useProduct, useRelatedProducts } from "@/hooks/useSupabase";
+import type { ProductDB } from "@/lib/supabase";
 import { motion } from "framer-motion";
+
+function toProductCard(p: ProductDB) {
+    return {
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        price: p.price,
+        image: p.image,
+        categoryId: p.category_id,
+        categoryName: p.categories?.name ?? "",
+        sku: p.sku,
+    };
+}
 
 export default function ProductDetail() {
     const { id } = useParams<{ id: string }>();
-    const product = mockProducts.find((p) => p.id === Number(id));
+    const { product, loading } = useProduct(Number(id));
+    const { products: related } = useRelatedProducts(
+        product?.category_id ?? 0,
+        Number(id)
+    );
     const { addItem, setIsOpen } = useCart();
+
+    if (loading) {
+        return (
+            <div className="mx-auto max-w-7xl px-4 py-20 md:px-8">
+                <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
+                    <div className="animate-pulse rounded-3xl bg-muted aspect-[4/5]" />
+                    <div className="flex flex-col gap-6 justify-center">
+                        <div className="animate-pulse h-4 bg-muted rounded w-24" />
+                        <div className="animate-pulse h-10 bg-muted rounded w-3/4" />
+                        <div className="animate-pulse h-8 bg-muted rounded w-1/3" />
+                        <div className="animate-pulse h-24 bg-muted rounded" />
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     if (!product) {
         return (
@@ -29,17 +63,14 @@ export default function ProductDetail() {
         );
     }
 
-    const relatedProducts = mockProducts
-        .filter((p) => p.categoryId === product.categoryId && p.id !== product.id)
-        .slice(0, 4);
-
     function handleAddToCart() {
+        if (!product) return;
         addItem({
-            id: product!.id,
-            name: product!.name,
-            price: product!.price,
-            image: product!.image,
-            sku: product!.sku,
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            image: product.image,
+            sku: product.sku,
         });
         setIsOpen(true);
     }
@@ -79,7 +110,7 @@ export default function ProductDetail() {
                             transition={{ duration: 0.4, delay: 0.1 }}
                             className="text-xs font-bold uppercase tracking-[0.2em] text-primary"
                         >
-                            {product.categoryName}
+                            {product.categories?.name}
                         </motion.span>
 
                         <motion.h1
@@ -166,14 +197,14 @@ export default function ProductDetail() {
                 </div>
             </section>
 
-            {relatedProducts.length > 0 && (
+            {related.length > 0 && (
                 <section className="bg-muted/10 py-24 mt-12 border-t border-border/30">
                     <div className="mx-auto max-w-7xl px-4 md:px-8">
                         <h2 className="font-display text-3xl font-bold text-foreground">
                             Vous aimerez aussi
                         </h2>
                         <div className="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-                            {relatedProducts.map((p, index) => (
+                            {related.map((p, index) => (
                                 <motion.div
                                     key={p.id}
                                     initial={{ opacity: 0, y: 20 }}
@@ -181,7 +212,7 @@ export default function ProductDetail() {
                                     viewport={{ once: true }}
                                     transition={{ duration: 0.5, delay: index * 0.1 }}
                                 >
-                                    <ProductCard product={p} />
+                                    <ProductCard product={toProductCard(p)} />
                                 </motion.div>
                             ))}
                         </div>
