@@ -2,6 +2,10 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import type { CategoryDB, ProductDB, BlogPostDB } from "@/lib/supabase";
 
+/* ------------------------------------------------------------------ */
+/* Hooks de lecture publics (catalogue, blog, fiches produit)         */
+/* ------------------------------------------------------------------ */
+
 export function useCategories() {
     const [categories, setCategories] = useState<CategoryDB[]>([]);
     const [loading, setLoading] = useState(true);
@@ -152,4 +156,184 @@ export function useRelatedPosts(excludeId: number) {
     }, [excludeId]);
 
     return { posts };
+}
+
+/* ------------------------------------------------------------------ */
+/* Hooks de lecture pour l'admin (listes completes + refetch manuel)  */
+/* ------------------------------------------------------------------ */
+
+export function useAdminCategories() {
+    const [categories, setCategories] = useState<CategoryDB[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    async function fetchCategories() {
+        setLoading(true);
+        const { data } = await supabase
+            .from("categories")
+            .select("*")
+            .order("name");
+        if (data) setCategories(data);
+        setLoading(false);
+    }
+
+    useEffect(() => {
+        fetchCategories();
+    }, []);
+
+    return { categories, loading, refetch: fetchCategories };
+}
+
+export function useAdminProducts() {
+    const [products, setProducts] = useState<ProductDB[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    async function fetchProducts() {
+        setLoading(true);
+        const { data } = await supabase
+            .from("products")
+            .select("*, categories(name, slug)")
+            .order("created_at", { ascending: false });
+        if (data) setProducts(data);
+        setLoading(false);
+    }
+
+    useEffect(() => {
+        fetchProducts();
+    }, []);
+
+    return { products, loading, refetch: fetchProducts };
+}
+
+export function useAdminBlogPosts() {
+    const [posts, setPosts] = useState<BlogPostDB[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    async function fetchPosts() {
+        setLoading(true);
+        const { data } = await supabase
+            .from("blog_posts")
+            .select("*")
+            .order("published_at", { ascending: false });
+        if (data) setPosts(data);
+        setLoading(false);
+    }
+
+    useEffect(() => {
+        fetchPosts();
+    }, []);
+
+    return { posts, loading, refetch: fetchPosts };
+}
+
+/* ------------------------------------------------------------------ */
+/* Fonctions CRUD - Categories                                        */
+/* ------------------------------------------------------------------ */
+
+export type CategoryInput = {
+    name: string;
+    slug: string;
+    image: string;
+};
+
+export async function createCategory(input: CategoryInput) {
+    const { data, error } = await supabase
+        .from("categories")
+        .insert(input)
+        .select()
+        .single();
+    if (error) throw error;
+    return data;
+}
+
+export async function updateCategory(id: number, input: CategoryInput) {
+    const { data, error } = await supabase
+        .from("categories")
+        .update(input)
+        .eq("id", id)
+        .select()
+        .single();
+    if (error) throw error;
+    return data;
+}
+
+export async function deleteCategory(id: number) {
+    const { error } = await supabase.from("categories").delete().eq("id", id);
+    if (error) throw error;
+}
+
+/* ------------------------------------------------------------------ */
+/* Fonctions CRUD - Produits                                          */
+/* ------------------------------------------------------------------ */
+
+export type ProductInput = {
+    name: string;
+    description: string;
+    price: number;
+    category_id: number;
+    image: string;
+};
+
+export async function createProduct(input: ProductInput) {
+    const { data, error } = await supabase
+        .from("products")
+        .insert(input)
+        .select()
+        .single();
+    if (error) throw error;
+    return data;
+}
+
+export async function updateProduct(id: number, input: ProductInput) {
+    const { data, error } = await supabase
+        .from("products")
+        .update(input)
+        .eq("id", id)
+        .select()
+        .single();
+    if (error) throw error;
+    return data;
+}
+
+export async function deleteProduct(id: number) {
+    const { error } = await supabase.from("products").delete().eq("id", id);
+    if (error) throw error;
+}
+
+/* ------------------------------------------------------------------ */
+/* Fonctions CRUD - Articles de blog                                  */
+/* ------------------------------------------------------------------ */
+
+export type BlogPostInput = {
+    title: string;
+    excerpt: string;
+    content: string;
+    cover_image: string;
+    category: string;
+    published_at: string;
+};
+
+export async function createBlogPost(input: BlogPostInput) {
+    const { data, error } = await supabase
+        .from("blog_posts")
+        .insert(input)
+        .select()
+        .single();
+    if (error) throw error;
+    return data;
+}
+
+export async function updateBlogPost(id: number, input: BlogPostInput) {
+    const { data, error } = await supabase
+        .from("blog_posts")
+        .update(input)
+        .eq("id", id)
+        .select()
+        .single();
+    if (error) throw error;
+    return data;
+}
+
+export async function deleteBlogPost(id: number) {
+    const { error } = await supabase.from("blog_posts").delete().eq("id", id);
+    if (error) throw error;
 }

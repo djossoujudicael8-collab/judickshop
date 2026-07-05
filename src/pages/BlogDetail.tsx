@@ -1,7 +1,7 @@
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Calendar, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useBlogPost, useRelatedPosts } from "@/hooks/useSupabase";
+import { useBlogPost, useBlogPosts } from "@/hooks/useSupabase";
 
 function formatDate(dateStr: string) {
     const date = new Date(dateStr);
@@ -15,17 +15,18 @@ function formatDate(dateStr: string) {
 export default function BlogDetail() {
     const { id } = useParams();
     const { post, loading } = useBlogPost(Number(id));
-    const { posts: related } = useRelatedPosts(Number(id));
+    const { posts: allPosts } = useBlogPosts();
+
+    const related = allPosts.filter((p) => p.id !== Number(id)).slice(0, 2);
 
     if (loading) {
         return (
             <div className="animate-pulse">
                 <div className="h-72 bg-muted md:h-96" />
-                <div className="mx-auto max-w-3xl px-4 py-12 md:px-8">
-                    <div className="h-6 bg-muted rounded w-1/3 mb-4" />
-                    <div className="h-4 bg-muted rounded mb-3" />
-                    <div className="h-4 bg-muted rounded mb-3 w-5/6" />
-                    <div className="h-4 bg-muted rounded w-4/6" />
+                <div className="mx-auto max-w-3xl px-4 py-12 flex flex-col gap-4">
+                    <div className="h-4 w-1/4 rounded bg-muted" />
+                    <div className="h-8 w-3/4 rounded bg-muted" />
+                    <div className="h-24 w-full rounded bg-muted" />
                 </div>
             </div>
         );
@@ -34,9 +35,7 @@ export default function BlogDetail() {
     if (!post) {
         return (
             <div className="mx-auto flex max-w-7xl flex-col items-center px-4 py-32 text-center">
-                <p className="font-display text-2xl text-foreground">
-                    Article non trouve
-                </p>
+                <p className="font-display text-2xl text-foreground">Article non trouve</p>
                 <Link to="/blog" className="mt-4 text-sm text-primary hover:underline">
                     Retour au blog
                 </Link>
@@ -57,12 +56,10 @@ export default function BlogDetail() {
                 <div className="absolute inset-0 bg-black/50" />
                 <div className="absolute inset-0 flex items-end">
                     <div className="mx-auto w-full max-w-3xl px-4 pb-10 md:px-8">
-                        <div className="flex items-center gap-3 mb-4">
-                            <span className="rounded-full bg-primary px-3 py-1 text-xs font-medium text-white">
-                                {post.category}
-                            </span>
-                        </div>
-                        <h1 className="font-display text-3xl font-semibold text-white md:text-4xl">
+                        <span className="rounded-full bg-primary px-3 py-1 text-xs font-medium text-white">
+                            {post.category}
+                        </span>
+                        <h1 className="font-display mt-4 text-3xl font-semibold text-white md:text-4xl">
                             {post.title}
                         </h1>
                     </div>
@@ -120,9 +117,7 @@ export default function BlogDetail() {
                                         />
                                     </div>
                                     <div>
-                                        <span className="text-xs font-medium text-primary">
-                                            {rpost.category}
-                                        </span>
+                                        <span className="text-xs font-medium text-primary">{rpost.category}</span>
                                         <h3 className="font-display mt-1 text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
                                             {rpost.title}
                                         </h3>

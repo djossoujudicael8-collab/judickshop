@@ -2,44 +2,26 @@ import { Link, useParams } from "react-router-dom";
 import { ShieldCheck, ShoppingBag, Truck, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import WhatsAppButton from "@/components/WhatsAppButton";
-import ProductCard from "@/components/ProductCard";
 import { useCart } from "@/stores/useCart";
-import { useProduct, useRelatedProducts } from "@/hooks/useSupabase";
-import type { ProductDB } from "@/lib/supabase";
+import { useProduct, useProducts } from "@/hooks/useSupabase";
 import { motion } from "framer-motion";
-
-function toProductCard(p: ProductDB) {
-    return {
-        id: p.id,
-        name: p.name,
-        description: p.description,
-        price: p.price,
-        image: p.image,
-        categoryId: p.category_id,
-        categoryName: p.categories?.name ?? "",
-        sku: p.sku,
-    };
-}
 
 export default function ProductDetail() {
     const { id } = useParams<{ id: string }>();
     const { product, loading } = useProduct(Number(id));
-    const { products: related } = useRelatedProducts(
-        product?.category_id ?? 0,
-        Number(id)
-    );
+    const { products: allProducts } = useProducts();
     const { addItem, setIsOpen } = useCart();
 
     if (loading) {
         return (
-            <div className="mx-auto max-w-7xl px-4 py-20 md:px-8">
+            <div className="mx-auto max-w-7xl px-4 py-12 md:px-8">
                 <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
-                    <div className="animate-pulse rounded-3xl bg-muted aspect-[4/5]" />
-                    <div className="flex flex-col gap-6 justify-center">
-                        <div className="animate-pulse h-4 bg-muted rounded w-24" />
-                        <div className="animate-pulse h-10 bg-muted rounded w-3/4" />
-                        <div className="animate-pulse h-8 bg-muted rounded w-1/3" />
-                        <div className="animate-pulse h-24 bg-muted rounded" />
+                    <div className="aspect-[4/5] animate-pulse rounded-3xl bg-muted" />
+                    <div className="flex flex-col gap-4 pt-8">
+                        <div className="h-4 w-1/4 animate-pulse rounded bg-muted" />
+                        <div className="h-10 w-3/4 animate-pulse rounded bg-muted" />
+                        <div className="h-8 w-1/3 animate-pulse rounded bg-muted" />
+                        <div className="h-24 w-full animate-pulse rounded bg-muted" />
                     </div>
                 </div>
             </div>
@@ -63,14 +45,16 @@ export default function ProductDetail() {
         );
     }
 
+    const relatedProducts = allProducts
+        .filter((p) => p.category_id === product.category_id && p.id !== product.id)
+        .slice(0, 4);
+
     function handleAddToCart() {
-        if (!product) return;
         addItem({
-            id: product.id,
-            name: product.name,
-            price: product.price,
-            image: product.image,
-            sku: product.sku,
+            id: product!.id,
+            name: product!.name,
+            price: product!.price,
+            image: product!.image,
         });
         setIsOpen(true);
     }
@@ -89,7 +73,6 @@ export default function ProductDetail() {
 
             <section className="mx-auto max-w-7xl px-4 py-8 md:px-8 lg:py-12">
                 <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-20 items-center">
-
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
@@ -140,15 +123,6 @@ export default function ProductDetail() {
                             {product.description}
                         </motion.p>
 
-                        <motion.p
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.4, delay: 0.45 }}
-                            className="mt-4 text-xs font-medium text-muted-foreground/60 uppercase tracking-wider"
-                        >
-                            Ref : {product.sku}
-                        </motion.p>
-
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -158,7 +132,6 @@ export default function ProductDetail() {
                             <WhatsAppButton
                                 product={{
                                     name: product.name,
-                                    sku: product.sku,
                                     price: product.price,
                                 }}
                                 className="flex-1 rounded-full py-4 text-base"
@@ -197,14 +170,14 @@ export default function ProductDetail() {
                 </div>
             </section>
 
-            {related.length > 0 && (
+            {relatedProducts.length > 0 && (
                 <section className="bg-muted/10 py-24 mt-12 border-t border-border/30">
                     <div className="mx-auto max-w-7xl px-4 md:px-8">
                         <h2 className="font-display text-3xl font-bold text-foreground">
                             Vous aimerez aussi
                         </h2>
                         <div className="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-                            {related.map((p, index) => (
+                            {relatedProducts.map((p, index) => (
                                 <motion.div
                                     key={p.id}
                                     initial={{ opacity: 0, y: 20 }}
@@ -212,7 +185,19 @@ export default function ProductDetail() {
                                     viewport={{ once: true }}
                                     transition={{ duration: 0.5, delay: index * 0.1 }}
                                 >
-                                    <ProductCard product={toProductCard(p)} />
+                                    <Link
+                                        to={"/produit/" + p.id}
+                                        className="group block overflow-hidden rounded-2xl bg-card border border-border/40 shadow-sm transition-all hover:-translate-y-1 hover:shadow-premium"
+                                    >
+                                        <div className="aspect-[4/5] overflow-hidden bg-muted/30">
+                                            <img src={p.image} alt={p.name} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                        </div>
+                                        <div className="p-5">
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">{p.categories?.name}</span>
+                                            <h3 className="font-display text-lg text-foreground group-hover:text-primary transition-colors">{p.name}</h3>
+                                            <p className="font-display text-xl text-primary font-medium mt-1">{p.price.toLocaleString()} FCFA</p>
+                                        </div>
+                                    </Link>
                                 </motion.div>
                             ))}
                         </div>

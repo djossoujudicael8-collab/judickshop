@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { PackageX, SlidersHorizontal } from "lucide-react";
-import ProductCard from "@/components/ProductCard";
 import { useCategories, useProducts } from "@/hooks/useSupabase";
-import type { ProductDB } from "@/lib/supabase";
+import { Link } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
     Select,
     SelectContent,
@@ -11,27 +11,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { motion, AnimatePresence } from "framer-motion";
-
-function SupabaseProductCard({ product }: { product: ProductDB }) {
-    const categoryName = product.categories?.name ?? "";
-    const categorySlug = product.categories?.slug ?? "";
-
-    return (
-        <ProductCard
-            product={{
-                id: product.id,
-                name: product.name,
-                description: product.description,
-                price: product.price,
-                image: product.image,
-                categoryId: product.category_id,
-                categoryName,
-                sku: product.sku,
-            }}
-        />
-    );
-}
 
 export default function Catalogue() {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -45,7 +24,7 @@ export default function Catalogue() {
         return [...products].sort((a, b) => {
             if (sort === "price_asc") return a.price - b.price;
             if (sort === "price_desc") return b.price - a.price;
-            return 0;
+            return b.id - a.id;
         });
     }, [products, sort]);
 
@@ -115,36 +94,58 @@ export default function Catalogue() {
 
                 {loading ? (
                     <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-                        {Array.from({ length: 6 }).map((_, i) => (
-                            <div key={i} className="animate-pulse rounded-2xl bg-muted aspect-[4/5]" />
+                        {Array.from({ length: 4 }).map((_, i) => (
+                            <div key={i} className="animate-pulse">
+                                <div className="aspect-[4/5] rounded-2xl bg-muted" />
+                                <div className="mt-4 h-4 w-3/4 rounded bg-muted" />
+                                <div className="mt-2 h-4 w-1/2 rounded bg-muted" />
+                            </div>
                         ))}
                     </div>
                 ) : sortedProducts.length === 0 ? (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="flex flex-col items-center justify-center gap-4 py-32"
-                    >
+                    <div className="flex flex-col items-center justify-center gap-4 py-32">
                         <div className="rounded-full bg-muted/50 p-6 border border-border/50">
                             <PackageX className="h-10 w-10 text-muted-foreground/50" />
                         </div>
                         <p className="text-base font-medium text-muted-foreground">
-                            Aucun produit dans cette categorie.
+                            Aucun produit trouve dans cette categorie.
                         </p>
-                    </motion.div>
+                    </div>
                 ) : (
                     <motion.div layout className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
                         <AnimatePresence mode="popLayout">
                             {sortedProducts.map((product) => (
                                 <motion.div
                                     layout
-                                    key={product.id}
                                     initial={{ opacity: 0, scale: 0.9 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     exit={{ opacity: 0, scale: 0.9 }}
                                     transition={{ duration: 0.4 }}
+                                    key={product.id}
                                 >
-                                    <SupabaseProductCard product={product} />
+                                    <Link
+                                        to={"/produit/" + product.id}
+                                        className="group block overflow-hidden rounded-2xl bg-card border border-border/40 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:shadow-premium"
+                                    >
+                                        <div className="aspect-[4/5] overflow-hidden bg-muted/30">
+                                            <img
+                                                src={product.image}
+                                                alt={product.name}
+                                                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                            />
+                                        </div>
+                                        <div className="p-5 flex flex-col gap-1">
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                                                {product.categories?.name}
+                                            </span>
+                                            <h3 className="font-display text-lg text-foreground group-hover:text-primary transition-colors">
+                                                {product.name}
+                                            </h3>
+                                            <p className="font-display text-xl text-primary font-medium mt-1">
+                                                {product.price.toLocaleString()} FCFA
+                                            </p>
+                                        </div>
+                                    </Link>
                                 </motion.div>
                             ))}
                         </AnimatePresence>

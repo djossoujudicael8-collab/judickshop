@@ -4,7 +4,6 @@ import { cn } from "@/lib/utils";
 interface WhatsAppButtonProps {
     product?: {
         name: string;
-        sku: string;
         price: number;
     };
     className?: string;

@@ -30,7 +30,14 @@ export default function Blog() {
                 {loading ? (
                     <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
                         {Array.from({ length: 3 }).map((_, i) => (
-                            <div key={i} className="animate-pulse rounded-xl bg-muted aspect-[4/3]" />
+                            <div key={i} className="animate-pulse rounded-xl bg-muted">
+                                <div className="aspect-video bg-muted/50 rounded-t-xl" />
+                                <div className="p-6 flex flex-col gap-3">
+                                    <div className="h-3 w-1/4 rounded bg-muted-foreground/20" />
+                                    <div className="h-5 w-3/4 rounded bg-muted-foreground/20" />
+                                    <div className="h-3 w-1/2 rounded bg-muted-foreground/20" />
+                                </div>
+                            </div>
                         ))}
                     </div>
                 ) : (

@@ -1,9 +1,8 @@
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import ProductCard from "@/components/ProductCard";
 import WhatsAppButton from "@/components/WhatsAppButton";
-import { mockCategories, mockProducts, mockBlogPosts } from "@/data/mock";
+import { useCategories, useProducts, useBlogPosts } from "@/hooks/useSupabase";
 import { motion } from "framer-motion";
 
 function formatDate(dateStr: string) {
@@ -12,6 +11,10 @@ function formatDate(dateStr: string) {
 }
 
 export default function Home() {
+    const { categories } = useCategories();
+    const { products } = useProducts();
+    const { posts } = useBlogPosts();
+
     return (
         <div>
             <section className="relative overflow-hidden bg-accent/30">
@@ -44,6 +47,7 @@ export default function Home() {
                 </motion.div>
             </section>
 
+            {/* Categories */}
             <section className="mx-auto max-w-7xl px-4 py-24 md:px-8">
                 <motion.h2
                     initial={{ opacity: 0, y: 20 }}
@@ -56,7 +60,7 @@ export default function Home() {
                 </motion.h2>
 
                 <div className="mt-16 grid grid-cols-1 gap-6 md:grid-cols-3">
-                    {mockCategories.map((category, index) => (
+                    {categories.map((category, index) => (
                         <motion.div
                             key={category.id}
                             initial={{ opacity: 0, y: 30 }}
@@ -85,6 +89,7 @@ export default function Home() {
                 </div>
             </section>
 
+            {/* Produits phares */}
             <section className="bg-muted/20 py-24">
                 <div className="mx-auto max-w-7xl px-4 md:px-8">
                     <div className="flex items-end justify-between mb-12">
@@ -100,7 +105,7 @@ export default function Home() {
                     </div>
 
                     <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-                        {mockProducts.slice(0, 4).map((product, index) => (
+                        {products.slice(0, 4).map((product, index) => (
                             <motion.div
                                 key={product.id}
                                 initial={{ opacity: 0, y: 30 }}
@@ -108,13 +113,36 @@ export default function Home() {
                                 viewport={{ once: true }}
                                 transition={{ duration: 0.5, delay: index * 0.1 }}
                             >
-                                <ProductCard product={product} />
+                                <Link
+                                    to={"/produit/" + product.id}
+                                    className="group block overflow-hidden rounded-2xl bg-card border border-border/40 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:shadow-premium"
+                                >
+                                    <div className="aspect-[4/5] overflow-hidden bg-muted/30">
+                                        <img
+                                            src={product.image}
+                                            alt={product.name}
+                                            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                        />
+                                    </div>
+                                    <div className="p-5 flex flex-col gap-1">
+                                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                                            {product.categories?.name}
+                                        </span>
+                                        <h3 className="font-display text-lg text-foreground group-hover:text-primary transition-colors">
+                                            {product.name}
+                                        </h3>
+                                        <p className="font-display text-xl text-primary font-medium mt-1">
+                                            {product.price.toLocaleString()} FCFA
+                                        </p>
+                                    </div>
+                                </Link>
                             </motion.div>
                         ))}
                     </div>
                 </div>
             </section>
 
+            {/* Blog */}
             <section className="mx-auto max-w-7xl px-4 py-20 md:px-8">
                 <div className="flex items-end justify-between mb-10">
                     <h2 className="font-display text-3xl font-bold text-foreground md:text-4xl">
@@ -128,7 +156,7 @@ export default function Home() {
                     </Link>
                 </div>
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                    {mockBlogPosts.map((post) => (
+                    {posts.slice(0, 3).map((post) => (
                         <Link
                             key={post.id}
                             to={"/blog/" + post.id}
@@ -136,7 +164,7 @@ export default function Home() {
                         >
                             <div className="aspect-video overflow-hidden bg-muted">
                                 <img
-                                    src={post.coverImage}
+                                    src={post.cover_image}
                                     alt={post.title}
                                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                                 />
@@ -146,13 +174,16 @@ export default function Home() {
                                 <h3 className="font-display mt-1 text-base font-semibold text-foreground group-hover:text-primary transition-colors">
                                     {post.title}
                                 </h3>
-                                <p className="mt-1 text-xs text-muted-foreground">{formatDate(post.publishedAt)}</p>
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                    {formatDate(post.published_at)}
+                                </p>
                             </div>
                         </Link>
                     ))}
                 </div>
             </section>
 
+            {/* CTA WhatsApp */}
             <section className="mx-auto max-w-3xl px-4 py-20 text-center md:px-8">
                 <h2 className="font-display text-3xl font-bold text-foreground md:text-4xl">
                     Une question ?

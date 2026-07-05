@@ -9,67 +9,71 @@ import NotFound from "@/pages/NotFound";
 import AdminLogin from "@/pages/AdminLogin";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminRoute from "@/components/AdminRoute";
+import ToastContainer from "@/components/ui/toast-container";
 
 export default function App() {
   return (
-    <Routes>
-      <Route
-        path="/"
-        element={
-          <Layout>
-            <Home />
-          </Layout>
-        }
-      />
-      <Route
-        path="/catalogue"
-        element={
-          <Layout>
-            <Catalogue />
-          </Layout>
-        }
-      />
-      <Route
-        path="/produit/:id"
-        element={
-          <Layout>
-            <ProductDetail />
-          </Layout>
-        }
-      />
-      <Route
-        path="/blog"
-        element={
-          <Layout>
-            <Blog />
-          </Layout>
-        }
-      />
-      <Route
-        path="/blog/:id"
-        element={
-          <Layout>
-            <BlogDetail />
-          </Layout>
-        }
-      />
-      <Route path="/admin" element={<AdminLogin />} />
-      <Route
-        path="/admin/dashboard"
-        element={
-          <AdminRoute>
-            <AdminDashboard />
-          </AdminRoute>
-        }
-      />
-      <Route
-        path="*"
-        element={
-          <Layout>
-            <NotFound />
-          </Layout>
-        }
-      />
-    </Routes>
+    <>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <Layout>
+              <Home />
+            </Layout>
+          }
+        />
+        <Route
+          path="/catalogue"
+          element={
+            <Layout>
+              <Catalogue />
+            </Layout>
+          }
+        />
+        <Route
+          path="/produit/:id"
+          element={
+            <Layout>
+              <ProductDetail />
+            </Layout>
+          }
+        />
+        <Route
+          path="/blog"
+          element={
+            <Layout>
+              <Blog />
+            </Layout>
+          }
+        />
+        <Route
+          path="/blog/:id"
+          element={
+            <Layout>
+              <BlogDetail />
+            </Layout>
+          }
+        />
+        <Route path="/admin" element={<AdminLogin />} />
+        <Route
+          path="/admin/dashboard"
+          element={
+            <AdminRoute>
+              <AdminDashboard />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="*"
+          element={
+            <Layout>
+              <NotFound />
+            </Layout>
+          }
+        />
+      </Routes>
+      <ToastContainer />
+    </>
   );
 }

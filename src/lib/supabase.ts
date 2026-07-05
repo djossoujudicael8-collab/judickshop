@@ -20,7 +20,6 @@ export type ProductDB = {
     price: number;
     category_id: number;
     image: string;
-    sku: string;
     created_at: string;
     categories?: { name: string; slug: string };
 };

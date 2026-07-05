@@ -50,8 +50,14 @@ public/favicon.svg
 public/icons.svg
 README.md
 src/App.tsx
+src/components/admin/BlogFormDialog.tsx
+src/components/admin/CategoryFormDialog.tsx
+src/components/admin/ConfirmDialog.tsx
+src/components/admin/ImageUploadField.tsx
+src/components/admin/ProductFormDialog.tsx
 src/components/AdminRoute.tsx
 src/components/CartDrawer.tsx
+src/components/ImageUploadField.tsx
 src/components/layout/Footer.tsx
 src/components/layout/Header.tsx
 src/components/layout/Layout.tsx
@@ -65,9 +71,14 @@ src/components/ui/select.tsx
 src/components/ui/separator.tsx
 src/components/ui/table.tsx
 src/components/ui/tabs.tsx
+src/components/ui/textarea.tsx
+src/components/ui/toast-container.tsx
 src/components/WhatsAppButton.tsx
 src/data/mock.ts
+src/hooks/useSupabase.ts
 src/index.css
+src/lib/storage.ts
+src/lib/supabase.ts
 src/lib/utils.ts
 src/lib/whatsapp.ts
 src/main.tsx
@@ -82,15 +93,956 @@ src/pages/ProductDetail.tsx
 src/stores/useAdmin.ts
 src/stores/useCart.ts
 src/stores/useTheme.ts
+src/stores/useToast.ts
 tailwind.config.js
 tsconfig.app.json
 tsconfig.json
 tsconfig.node.json
+vercel.json
 vite.config.ts
 </directory_structure>
 
 <files>
 This section contains the contents of the repository's files.
+
+<file path="src/components/admin/BlogFormDialog.tsx">
+import { useEffect, useState } from "react";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Loader2 } from "lucide-react";
+import { createBlogPost, updateBlogPost } from "@/hooks/useSupabase";
+import type { BlogPostDB } from "@/lib/supabase";
+import { useToast } from "@/stores/useToast";
+import ImageUploadField from "@/components/admin/ImageUploadField";
+
+interface BlogFormDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    post: BlogPostDB | null;
+    onSuccess: () => void;
+}
+
+function todayISO() {
+    return new Date().toISOString().slice(0, 10);
+}
+
+const emptyForm = {
+    title: "",
+    excerpt: "",
+    content: "",
+    cover_image: "",
+    category: "",
+    published_at: todayISO(),
+};
+
+export default function BlogFormDialog({
+    open,
+    onOpenChange,
+    post,
+    onSuccess,
+}: BlogFormDialogProps) {
+    const [form, setForm] = useState(emptyForm);
+    const [saving, setSaving] = useState(false);
+    const { showToast } = useToast();
+
+    useEffect(() => {
+        if (post) {
+            setForm({
+                title: post.title,
+                excerpt: post.excerpt,
+                content: post.content,
+                cover_image: post.cover_image,
+                category: post.category,
+                published_at: post.published_at.slice(0, 10) || todayISO(),
+            });
+        } else {
+            setForm(emptyForm);
+        }
+    }, [post, open]);
+
+    async function handleSubmit(e: React.FormEvent) {
+        e.preventDefault();
+
+        if (!form.title || !form.category) {
+            showToast("error", "Le titre et la categorie sont obligatoires.");
+            return;
+        }
+
+        setSaving(true);
+
+        const payload = {
+            title: form.title,
+            excerpt: form.excerpt,
+            content: form.content,
+            cover_image: form.cover_image,
+            category: form.category,
+            published_at: form.published_at,
+        };
+
+        try {
+            if (post) {
+                await updateBlogPost(post.id, payload);
+                showToast("success", "Article modifie avec succes.");
+            } else {
+                await createBlogPost(payload);
+                showToast("success", "Article ajoute avec succes.");
+            }
+            onSuccess();
+            onOpenChange(false);
+        } catch {
+            showToast("error", "Une erreur est survenue. Reessayez.");
+        } finally {
+            setSaving(false);
+        }
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-lg">
+                <DialogHeader>
+                    <DialogTitle className="font-display text-xl">
+                        {post ? "Modifier l'article" : "Nouvel article"}
+                    </DialogTitle>
+                </DialogHeader>
+
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4 max-h-[70vh] overflow-y-auto pr-1">
+                    <div className="flex flex-col gap-2">
+                        <Label htmlFor="post-title">Titre</Label>
+                        <Input
+                            id="post-title"
+                            value={form.title}
+                            onChange={(e) => setForm({ ...form, title: e.target.value })}
+                            placeholder="Comment choisir votre style"
+                            required
+                        />
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                        <Label htmlFor="post-excerpt">Extrait</Label>
+                        <Textarea
+                            id="post-excerpt"
+                            value={form.excerpt}
+                            onChange={(e) => setForm({ ...form, excerpt: e.target.value })}
+                            placeholder="Court resume affiche sur la liste des articles"
+                            rows={2}
+                        />
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                        <Label htmlFor="post-content">Contenu</Label>
+                        <Textarea
+                            id="post-content"
+                            value={form.content}
+                            onChange={(e) => setForm({ ...form, content: e.target.value })}
+                            placeholder="Contenu complet de l'article"
+                            rows={8}
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="flex flex-col gap-2">
+                            <Label htmlFor="post-category">Categorie</Label>
+                            <Input
+                                id="post-category"
+                                value={form.category}
+                                onChange={(e) => setForm({ ...form, category: e.target.value })}
+                                placeholder="Style"
+                                required
+                            />
+                        </div>
+
+                        <div className="flex flex-col gap-2">
+                            <Label htmlFor="post-date">Date de publication</Label>
+                            <Input
+                                id="post-date"
+                                type="date"
+                                value={form.published_at}
+                                onChange={(e) => setForm({ ...form, published_at: e.target.value })}
+                            />
+                        </div>
+                    </div>
+
+                    <ImageUploadField
+                        id="blog-cover-image-upload"
+                        label="Image de couverture"
+                        value={form.cover_image}
+                        onChange={(url) => setForm({ ...form, cover_image: url })}
+                        folder="blog"
+                    />
+
+                    <DialogFooter className="mt-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => onOpenChange(false)}
+                        >
+                            Annuler
+                        </Button>
+                        <Button type="submit" disabled={saving} className="gap-2">
+                            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                            {saving ? "Enregistrement..." : "Enregistrer"}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+</file>
+
+<file path="src/components/admin/CategoryFormDialog.tsx">
+import { useEffect, useState } from "react";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
+import { createCategory, updateCategory } from "@/hooks/useSupabase";
+import type { CategoryDB } from "@/lib/supabase";
+import { useToast } from "@/stores/useToast";
+import ImageUploadField from "@/components/admin/ImageUploadField";
+
+interface CategoryFormDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    category: CategoryDB | null;
+    onSuccess: () => void;
+}
+
+const emptyForm = {
+    name: "",
+    slug: "",
+    image: "",
+};
+
+function slugify(text: string) {
+    return text
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "");
+}
+
+export default function CategoryFormDialog({
+    open,
+    onOpenChange,
+    category,
+    onSuccess,
+}: CategoryFormDialogProps) {
+    const [form, setForm] = useState(emptyForm);
+    const [slugTouched, setSlugTouched] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const { showToast } = useToast();
+
+    useEffect(() => {
+        if (category) {
+            setForm({
+                name: category.name,
+                slug: category.slug,
+                image: category.image,
+            });
+            setSlugTouched(true);
+        } else {
+            setForm(emptyForm);
+            setSlugTouched(false);
+        }
+    }, [category, open]);
+
+    function handleNameChange(value: string) {
+        setForm((prev) => ({
+            ...prev,
+            name: value,
+            slug: slugTouched ? prev.slug : slugify(value),
+        }));
+    }
+
+    async function handleSubmit(e: React.FormEvent) {
+        e.preventDefault();
+
+        if (!form.name || !form.slug) {
+            showToast("error", "Le nom et le slug sont obligatoires.");
+            return;
+        }
+
+        setSaving(true);
+
+        const payload = {
+            name: form.name,
+            slug: form.slug,
+            image: form.image,
+        };
+
+        try {
+            if (category) {
+                await updateCategory(category.id, payload);
+                showToast("success", "Categorie modifiee avec succes.");
+            } else {
+                await createCategory(payload);
+                showToast("success", "Categorie ajoutee avec succes.");
+            }
+            onSuccess();
+            onOpenChange(false);
+        } catch {
+            showToast("error", "Une erreur est survenue. Reessayez.");
+        } finally {
+            setSaving(false);
+        }
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle className="font-display text-xl">
+                        {category ? "Modifier la categorie" : "Nouvelle categorie"}
+                    </DialogTitle>
+                </DialogHeader>
+
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-2">
+                        <Label htmlFor="cat-name">Nom</Label>
+                        <Input
+                            id="cat-name"
+                            value={form.name}
+                            onChange={(e) => handleNameChange(e.target.value)}
+                            placeholder="Mode"
+                            required
+                        />
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                        <Label htmlFor="cat-slug">Slug (URL)</Label>
+                        <Input
+                            id="cat-slug"
+                            value={form.slug}
+                            onChange={(e) => {
+                                setSlugTouched(true);
+                                setForm({ ...form, slug: e.target.value });
+                            }}
+                            placeholder="mode"
+                            required
+                        />
+                    </div>
+
+                    <ImageUploadField
+                        id="category-image-upload"
+                        label="Image de la categorie"
+                        value={form.image}
+                        onChange={(url) => setForm({ ...form, image: url })}
+                        folder="categories"
+                    />
+
+                    <DialogFooter className="mt-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => onOpenChange(false)}
+                        >
+                            Annuler
+                        </Button>
+                        <Button type="submit" disabled={saving} className="gap-2">
+                            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                            {saving ? "Enregistrement..." : "Enregistrer"}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+</file>
+
+<file path="src/components/admin/ConfirmDialog.tsx">
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
+
+interface ConfirmDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    title: string;
+    description: string;
+    onConfirm: () => void;
+    loading?: boolean;
+}
+
+export default function ConfirmDialog({
+    open,
+    onOpenChange,
+    title,
+    description,
+    onConfirm,
+    loading = false,
+}: ConfirmDialogProps) {
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-sm">
+                <DialogHeader>
+                    <DialogTitle className="font-display text-xl">{title}</DialogTitle>
+                    <DialogDescription>{description}</DialogDescription>
+                </DialogHeader>
+
+                <DialogFooter className="mt-2">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                        disabled={loading}
+                    >
+                        Annuler
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="destructive"
+                        onClick={onConfirm}
+                        disabled={loading}
+                        className="gap-2"
+                    >
+                        {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+                        {loading ? "Suppression..." : "Supprimer"}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+</file>
+
+<file path="src/components/admin/ImageUploadField.tsx">
+import { useState } from "react";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Loader2, Upload, ImageOff } from "lucide-react";
+import { uploadImage } from "@/lib/storage";
+import { useToast } from "@/stores/useToast";
+
+interface ImageUploadFieldProps {
+    id: string;
+    label: string;
+    value: string;
+    onChange: (url: string) => void;
+    folder: string;
+}
+
+export default function ImageUploadField({
+    id,
+    label,
+    value,
+    onChange,
+    folder,
+}: ImageUploadFieldProps) {
+    const [uploading, setUploading] = useState(false);
+    const { showToast } = useToast();
+
+    async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 5 * 1024 * 1024) {
+            showToast("error", "L'image ne doit pas depasser 5 Mo.");
+            e.target.value = "";
+            return;
+        }
+
+        setUploading(true);
+        try {
+            const url = await uploadImage(file, folder);
+            onChange(url);
+            showToast("success", "Image televersee avec succes.");
+        } catch {
+            showToast("error", "Erreur lors du televersement de l'image.");
+        } finally {
+            setUploading(false);
+            e.target.value = "";
+        }
+    }
+
+    return (
+        <div className="flex flex-col gap-2">
+            <Label>{label}</Label>
+            <div className="flex items-center gap-4">
+                <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-border/50 bg-muted/30 flex items-center justify-center">
+                    {value ? (
+                        <img src={value} alt="Apercu" className="h-full w-full object-cover" />
+                    ) : (
+                        <ImageOff className="h-6 w-6 text-muted-foreground/50" />
+                    )}
+                </div>
+
+                <div className="flex-1">
+                    <input
+                        id={id}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        disabled={uploading}
+                        className="hidden"
+                    />
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={uploading}
+                        className="gap-2"
+                        onClick={() => document.getElementById(id)?.click()}
+                    >
+                        {uploading ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                            <Upload className="h-4 w-4" />
+                        )}
+                        {uploading
+                            ? "Televersement..."
+                            : value
+                                ? "Changer l'image"
+                                : "Choisir une image"}
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
+}
+</file>
+
+<file path="src/components/admin/ProductFormDialog.tsx">
+import { useEffect, useState } from "react";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Loader2 } from "lucide-react";
+import { createProduct, updateProduct } from "@/hooks/useSupabase";
+import type { ProductDB, CategoryDB } from "@/lib/supabase";
+import { useToast } from "@/stores/useToast";
+import ImageUploadField from "@/components/admin/ImageUploadField";
+
+interface ProductFormDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    product: ProductDB | null;
+    categories: CategoryDB[];
+    onSuccess: () => void;
+}
+
+const emptyForm = {
+    name: "",
+    description: "",
+    price: "",
+    category_id: "",
+    image: "",
+};
+
+export default function ProductFormDialog({
+    open,
+    onOpenChange,
+    product,
+    categories,
+    onSuccess,
+}: ProductFormDialogProps) {
+    const [form, setForm] = useState(emptyForm);
+    const [saving, setSaving] = useState(false);
+    const { showToast } = useToast();
+
+    useEffect(() => {
+        if (product) {
+            setForm({
+                name: product.name,
+                description: product.description,
+                price: String(product.price),
+                category_id: String(product.category_id),
+                image: product.image,
+            });
+        } else {
+            setForm(emptyForm);
+        }
+    }, [product, open]);
+
+    async function handleSubmit(e: React.FormEvent) {
+        e.preventDefault();
+
+        if (!form.name || !form.category_id || !form.price) {
+            showToast("error", "Merci de remplir tous les champs obligatoires.");
+            return;
+        }
+
+        setSaving(true);
+
+        const payload = {
+            name: form.name,
+            description: form.description,
+            price: Number(form.price),
+            category_id: Number(form.category_id),
+            image: form.image,
+        };
+
+        try {
+            if (product) {
+                await updateProduct(product.id, payload);
+                showToast("success", "Produit modifie avec succes.");
+            } else {
+                await createProduct(payload);
+                showToast("success", "Produit ajoute avec succes.");
+            }
+            onSuccess();
+            onOpenChange(false);
+        } catch {
+            showToast("error", "Une erreur est survenue. Reessayez.");
+        } finally {
+            setSaving(false);
+        }
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-lg">
+                <DialogHeader>
+                    <DialogTitle className="font-display text-xl">
+                        {product ? "Modifier le produit" : "Nouveau produit"}
+                    </DialogTitle>
+                </DialogHeader>
+
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4 max-h-[70vh] overflow-y-auto pr-1">
+                    <div className="flex flex-col gap-2">
+                        <Label htmlFor="name">Nom du produit</Label>
+                        <Input
+                            id="name"
+                            value={form.name}
+                            onChange={(e) => setForm({ ...form, name: e.target.value })}
+                            placeholder="Blazer Premium Lin"
+                            required
+                        />
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                        <Label htmlFor="description">Description</Label>
+                        <Textarea
+                            id="description"
+                            value={form.description}
+                            onChange={(e) => setForm({ ...form, description: e.target.value })}
+                            placeholder="Description detaillee du produit"
+                            rows={4}
+                        />
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                        <Label htmlFor="price">Prix (FCFA)</Label>
+                        <Input
+                            id="price"
+                            type="number"
+                            min="0"
+                            value={form.price}
+                            onChange={(e) => setForm({ ...form, price: e.target.value })}
+                            placeholder="45000"
+                            required
+                        />
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                        <Label>Categorie</Label>
+                        <Select
+                            value={form.category_id}
+                            onValueChange={(value) => setForm({ ...form, category_id: value })}
+                        >
+                            <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Choisir une categorie" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {categories.map((cat) => (
+                                    <SelectItem key={cat.id} value={String(cat.id)}>
+                                        {cat.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <ImageUploadField
+                        id="product-image-upload"
+                        label="Image du produit"
+                        value={form.image}
+                        onChange={(url) => setForm({ ...form, image: url })}
+                        folder="products"
+                    />
+
+                    <DialogFooter className="mt-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => onOpenChange(false)}
+                        >
+                            Annuler
+                        </Button>
+                        <Button type="submit" disabled={saving} className="gap-2">
+                            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                            {saving ? "Enregistrement..." : "Enregistrer"}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+</file>
+
+<file path="src/components/ImageUploadField.tsx">
+import { useState } from "react";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Loader2, Upload, ImageOff } from "lucide-react";
+import { uploadImage } from "@/lib/storage";
+import { useToast } from "@/stores/useToast";
+
+interface ImageUploadFieldProps {
+    id: string;
+    label: string;
+    value: string;
+    onChange: (url: string) => void;
+    folder: string;
+}
+
+export default function ImageUploadField({
+    id,
+    label,
+    value,
+    onChange,
+    folder,
+}: ImageUploadFieldProps) {
+    const [uploading, setUploading] = useState(false);
+    const { showToast } = useToast();
+
+    async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 5 * 1024 * 1024) {
+            showToast("error", "L'image ne doit pas depasser 5 Mo.");
+            e.target.value = "";
+            return;
+        }
+
+        setUploading(true);
+        try {
+            const url = await uploadImage(file, folder);
+            onChange(url);
+            showToast("success", "Image televersee avec succes.");
+        } catch {
+            showToast("error", "Erreur lors du televersement de l'image.");
+        } finally {
+            setUploading(false);
+            e.target.value = "";
+        }
+    }
+
+    return (
+        <div className="flex flex-col gap-2">
+            <Label>{label}</Label>
+            <div className="flex items-center gap-4">
+                <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-border/50 bg-muted/30 flex items-center justify-center">
+                    {value ? (
+                        <img src={value} alt="Apercu" className="h-full w-full object-cover" />
+                    ) : (
+                        <ImageOff className="h-6 w-6 text-muted-foreground/50" />
+                    )}
+                </div>
+
+                <div className="flex-1">
+                    <input
+                        id={id}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        disabled={uploading}
+                        className="hidden"
+                    />
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={uploading}
+                        className="gap-2"
+                        onClick={() => document.getElementById(id)?.click()}
+                    >
+                        {uploading ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                            <Upload className="h-4 w-4" />
+                        )}
+                        {uploading
+                            ? "Televersement..."
+                            : value
+                                ? "Changer l'image"
+                                : "Choisir une image"}
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
+}
+</file>
+
+<file path="src/components/ui/textarea.tsx">
+import * as React from "react"
+
+import { cn } from "@/lib/utils"
+
+function Textarea({ className, ...props }: React.ComponentProps<"textarea">) {
+    return (
+        <textarea
+            data-slot="textarea"
+            className={cn(
+                "flex min-h-20 w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
+                className
+            )}
+            {...props}
+        />
+    )
+}
+
+export { Textarea }
+</file>
+
+<file path="src/components/ui/toast-container.tsx">
+import { CheckCircle2, XCircle, X } from "lucide-react";
+import { useToast } from "@/stores/useToast";
+import { motion, AnimatePresence } from "framer-motion";
+
+export default function ToastContainer() {
+    const { toasts, removeToast } = useToast();
+
+    return (
+        <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 w-full max-w-sm">
+            <AnimatePresence>
+                {toasts.map((toast) => (
+                    <motion.div
+                        key={toast.id}
+                        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.25 }}
+                        className={
+                            "flex items-start gap-3 rounded-2xl border p-4 shadow-premium-lg backdrop-blur-md bg-background " +
+                            (toast.type === "success"
+                                ? "border-secondary/40"
+                                : "border-destructive/40")
+                        }
+                    >
+                        {toast.type === "success" ? (
+                            <CheckCircle2 className="h-5 w-5 shrink-0 text-secondary mt-0.5" />
+                        ) : (
+                            <XCircle className="h-5 w-5 shrink-0 text-destructive mt-0.5" />
+                        )}
+                        <p className="flex-1 text-sm font-medium text-foreground">
+                            {toast.message}
+                        </p>
+                        <button
+                            onClick={() => removeToast(toast.id)}
+                            className="text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                    </motion.div>
+                ))}
+            </AnimatePresence>
+        </div>
+    );
+}
+</file>
+
+<file path="src/lib/storage.ts">
+import { supabase } from "@/lib/supabase";
+
+export async function uploadImage(file: File, folder: string): Promise<string> {
+    const fileExt = file.name.split(".").pop();
+    const randomPart = Date.now() + "-" + Math.random().toString(36).slice(2);
+    const fileName = folder + "/" + randomPart + "." + fileExt;
+
+    const { error } = await supabase.storage
+        .from("images")
+        .upload(fileName, file, {
+            cacheControl: "3600",
+            upsert: false,
+        });
+
+    if (error) throw error;
+
+    const { data } = supabase.storage.from("images").getPublicUrl(fileName);
+
+    return data.publicUrl;
+}
+</file>
+
+<file path="src/stores/useToast.ts">
+import { create } from "zustand";
+
+export interface ToastMessage {
+    id: number;
+    type: "success" | "error";
+    message: string;
+}
+
+interface ToastState {
+    toasts: ToastMessage[];
+    showToast: (type: "success" | "error", message: string) => void;
+    removeToast: (id: number) => void;
+}
+
+export const useToast = create<ToastState>((set) => ({
+    toasts: [],
+
+    showToast: (type, message) => {
+        const id = Date.now() + Math.random();
+        set((state) => ({ toasts: [...state.toasts, { id, type, message }] }));
+
+        setTimeout(() => {
+            set((state) => ({
+                toasts: state.toasts.filter((t) => t.id !== id),
+            }));
+        }, 4000);
+    },
+
+    removeToast: (id) =>
+        set((state) => ({
+            toasts: state.toasts.filter((t) => t.id !== id),
+        })),
+}));
+</file>
 
 <file path=".gitignore">
 # Logs
@@ -172,49 +1124,6 @@ dist-ssr
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-</file>
-
-<file path="package.json">
-{
-  "name": "judickshop-v2",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "oxlint",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@fontsource-variable/geist": "^5.2.9",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "framer-motion": "^12.42.2",
-    "lucide-react": "^1.22.0",
-    "radix-ui": "^1.6.0",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7",
-    "react-router-dom": "^7.18.1",
-    "shadcn": "^4.12.0",
-    "tailwind-merge": "^3.6.0",
-    "tw-animate-css": "^1.4.0",
-    "zustand": "^5.0.14"
-  },
-  "devDependencies": {
-    "@types/node": "^24.13.2",
-    "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.2",
-    "autoprefixer": "^10.5.2",
-    "oxlint": "^1.69.0",
-    "postcss": "^8.5.16",
-    "tailwindcss": "^3.4.19",
-    "tailwindcss-animate": "^1.0.7",
-    "typescript": "~6.0.2",
-    "vite": "^8.1.0"
-  }
-}
 </file>
 
 <file path="postcss.config.js">
@@ -304,68 +1213,72 @@ import NotFound from "@/pages/NotFound";
 import AdminLogin from "@/pages/AdminLogin";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminRoute from "@/components/AdminRoute";
+import ToastContainer from "@/components/ui/toast-container";
 
 export default function App() {
   return (
-    <Routes>
-      <Route
-        path="/"
-        element={
-          <Layout>
-            <Home />
-          </Layout>
-        }
-      />
-      <Route
-        path="/catalogue"
-        element={
-          <Layout>
-            <Catalogue />
-          </Layout>
-        }
-      />
-      <Route
-        path="/produit/:id"
-        element={
-          <Layout>
-            <ProductDetail />
-          </Layout>
-        }
-      />
-      <Route
-        path="/blog"
-        element={
-          <Layout>
-            <Blog />
-          </Layout>
-        }
-      />
-      <Route
-        path="/blog/:id"
-        element={
-          <Layout>
-            <BlogDetail />
-          </Layout>
-        }
-      />
-      <Route path="/admin" element={<AdminLogin />} />
-      <Route
-        path="/admin/dashboard"
-        element={
-          <AdminRoute>
-            <AdminDashboard />
-          </AdminRoute>
-        }
-      />
-      <Route
-        path="*"
-        element={
-          <Layout>
-            <NotFound />
-          </Layout>
-        }
-      />
-    </Routes>
+    <>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <Layout>
+              <Home />
+            </Layout>
+          }
+        />
+        <Route
+          path="/catalogue"
+          element={
+            <Layout>
+              <Catalogue />
+            </Layout>
+          }
+        />
+        <Route
+          path="/produit/:id"
+          element={
+            <Layout>
+              <ProductDetail />
+            </Layout>
+          }
+        />
+        <Route
+          path="/blog"
+          element={
+            <Layout>
+              <Blog />
+            </Layout>
+          }
+        />
+        <Route
+          path="/blog/:id"
+          element={
+            <Layout>
+              <BlogDetail />
+            </Layout>
+          }
+        />
+        <Route path="/admin" element={<AdminLogin />} />
+        <Route
+          path="/admin/dashboard"
+          element={
+            <AdminRoute>
+              <AdminDashboard />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="*"
+          element={
+            <Layout>
+              <NotFound />
+            </Layout>
+          }
+        />
+      </Routes>
+      <ToastContainer />
+    </>
   );
 }
 </file>
@@ -1534,7 +2447,6 @@ import { cn } from "@/lib/utils";
 interface WhatsAppButtonProps {
     product?: {
         name: string;
-        sku: string;
         price: number;
     };
     className?: string;
@@ -1549,20 +2461,22 @@ export default function WhatsAppButton({
     const link = getWhatsAppLink(product);
 
     return (
-        <a
-            href={link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={cn(
+
+        href = { link }
+            target = "_blank"
+    rel = "noopener noreferrer"
+    className = {
+        cn(
                 "inline-flex items-center justify-center gap-2 rounded-lg bg-[#25d366] px-6 py-3 text-sm font-medium text-white shadow-premium transition-transform hover:scale-[1.02] active:scale-[0.98]",
-                className
-            )}
+            className
+        )
+    }
         >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-            </svg>
-            {label}
-        </a>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+        </svg>
+    { label }
+        </a >
     );
 }
 </file>
@@ -1735,6 +2649,348 @@ export const mockBlogPosts: BlogPost[] = [
 ];
 </file>
 
+<file path="src/hooks/useSupabase.ts">
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
+import type { CategoryDB, ProductDB, BlogPostDB } from "@/lib/supabase";
+
+/* ------------------------------------------------------------------ */
+/* Hooks de lecture publics (catalogue, blog, fiches produit)         */
+/* ------------------------------------------------------------------ */
+
+export function useCategories() {
+    const [categories, setCategories] = useState<CategoryDB[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        supabase
+            .from("categories")
+            .select("*")
+            .order("name")
+            .then(({ data }) => {
+                if (data) setCategories(data);
+                setLoading(false);
+            });
+    }, []);
+
+    return { categories, loading };
+}
+
+export function useProducts(categorySlug?: string, search?: string) {
+    const [products, setProducts] = useState<ProductDB[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function fetchProducts() {
+            setLoading(true);
+
+            let categoryId: number | undefined;
+
+            if (categorySlug) {
+                const { data: cat } = await supabase
+                    .from("categories")
+                    .select("id")
+                    .eq("slug", categorySlug)
+                    .single();
+                if (cat) categoryId = cat.id;
+            }
+
+            let query = supabase
+                .from("products")
+                .select("*, categories(name, slug)")
+                .order("created_at", { ascending: false });
+
+            if (categoryId) {
+                query = query.eq("category_id", categoryId);
+            }
+
+            if (search) {
+                query = query.ilike("name", "%" + search + "%");
+            }
+
+            const { data } = await query;
+            if (data) setProducts(data);
+            setLoading(false);
+        }
+
+        fetchProducts();
+    }, [categorySlug, search]);
+
+    return { products, loading };
+}
+
+export function useProduct(id: number) {
+    const [product, setProduct] = useState<ProductDB | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        supabase
+            .from("products")
+            .select("*, categories(name, slug)")
+            .eq("id", id)
+            .single()
+            .then(({ data }) => {
+                if (data) setProduct(data);
+                setLoading(false);
+            });
+    }, [id]);
+
+    return { product, loading };
+}
+
+export function useRelatedProducts(categoryId: number, excludeId: number) {
+    const [products, setProducts] = useState<ProductDB[]>([]);
+
+    useEffect(() => {
+        supabase
+            .from("products")
+            .select("*, categories(name, slug)")
+            .eq("category_id", categoryId)
+            .neq("id", excludeId)
+            .limit(4)
+            .then(({ data }) => {
+                if (data) setProducts(data);
+            });
+    }, [categoryId, excludeId]);
+
+    return { products };
+}
+
+export function useBlogPosts() {
+    const [posts, setPosts] = useState<BlogPostDB[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        supabase
+            .from("blog_posts")
+            .select("*")
+            .order("published_at", { ascending: false })
+            .then(({ data }) => {
+                if (data) setPosts(data);
+                setLoading(false);
+            });
+    }, []);
+
+    return { posts, loading };
+}
+
+export function useBlogPost(id: number) {
+    const [post, setPost] = useState<BlogPostDB | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        supabase
+            .from("blog_posts")
+            .select("*")
+            .eq("id", id)
+            .single()
+            .then(({ data }) => {
+                if (data) setPost(data);
+                setLoading(false);
+            });
+    }, [id]);
+
+    return { post, loading };
+}
+
+export function useRelatedPosts(excludeId: number) {
+    const [posts, setPosts] = useState<BlogPostDB[]>([]);
+
+    useEffect(() => {
+        supabase
+            .from("blog_posts")
+            .select("*")
+            .neq("id", excludeId)
+            .limit(2)
+            .then(({ data }) => {
+                if (data) setPosts(data);
+            });
+    }, [excludeId]);
+
+    return { posts };
+}
+
+/* ------------------------------------------------------------------ */
+/* Hooks de lecture pour l'admin (listes completes + refetch manuel)  */
+/* ------------------------------------------------------------------ */
+
+export function useAdminCategories() {
+    const [categories, setCategories] = useState<CategoryDB[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    async function fetchCategories() {
+        setLoading(true);
+        const { data } = await supabase
+            .from("categories")
+            .select("*")
+            .order("name");
+        if (data) setCategories(data);
+        setLoading(false);
+    }
+
+    useEffect(() => {
+        fetchCategories();
+    }, []);
+
+    return { categories, loading, refetch: fetchCategories };
+}
+
+export function useAdminProducts() {
+    const [products, setProducts] = useState<ProductDB[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    async function fetchProducts() {
+        setLoading(true);
+        const { data } = await supabase
+            .from("products")
+            .select("*, categories(name, slug)")
+            .order("created_at", { ascending: false });
+        if (data) setProducts(data);
+        setLoading(false);
+    }
+
+    useEffect(() => {
+        fetchProducts();
+    }, []);
+
+    return { products, loading, refetch: fetchProducts };
+}
+
+export function useAdminBlogPosts() {
+    const [posts, setPosts] = useState<BlogPostDB[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    async function fetchPosts() {
+        setLoading(true);
+        const { data } = await supabase
+            .from("blog_posts")
+            .select("*")
+            .order("published_at", { ascending: false });
+        if (data) setPosts(data);
+        setLoading(false);
+    }
+
+    useEffect(() => {
+        fetchPosts();
+    }, []);
+
+    return { posts, loading, refetch: fetchPosts };
+}
+
+/* ------------------------------------------------------------------ */
+/* Fonctions CRUD - Categories                                        */
+/* ------------------------------------------------------------------ */
+
+export type CategoryInput = {
+    name: string;
+    slug: string;
+    image: string;
+};
+
+export async function createCategory(input: CategoryInput) {
+    const { data, error } = await supabase
+        .from("categories")
+        .insert(input)
+        .select()
+        .single();
+    if (error) throw error;
+    return data;
+}
+
+export async function updateCategory(id: number, input: CategoryInput) {
+    const { data, error } = await supabase
+        .from("categories")
+        .update(input)
+        .eq("id", id)
+        .select()
+        .single();
+    if (error) throw error;
+    return data;
+}
+
+export async function deleteCategory(id: number) {
+    const { error } = await supabase.from("categories").delete().eq("id", id);
+    if (error) throw error;
+}
+
+/* ------------------------------------------------------------------ */
+/* Fonctions CRUD - Produits                                          */
+/* ------------------------------------------------------------------ */
+
+export type ProductInput = {
+    name: string;
+    description: string;
+    price: number;
+    category_id: number;
+    image: string;
+};
+
+export async function createProduct(input: ProductInput) {
+    const { data, error } = await supabase
+        .from("products")
+        .insert(input)
+        .select()
+        .single();
+    if (error) throw error;
+    return data;
+}
+
+export async function updateProduct(id: number, input: ProductInput) {
+    const { data, error } = await supabase
+        .from("products")
+        .update(input)
+        .eq("id", id)
+        .select()
+        .single();
+    if (error) throw error;
+    return data;
+}
+
+export async function deleteProduct(id: number) {
+    const { error } = await supabase.from("products").delete().eq("id", id);
+    if (error) throw error;
+}
+
+/* ------------------------------------------------------------------ */
+/* Fonctions CRUD - Articles de blog                                  */
+/* ------------------------------------------------------------------ */
+
+export type BlogPostInput = {
+    title: string;
+    excerpt: string;
+    content: string;
+    cover_image: string;
+    category: string;
+    published_at: string;
+};
+
+export async function createBlogPost(input: BlogPostInput) {
+    const { data, error } = await supabase
+        .from("blog_posts")
+        .insert(input)
+        .select()
+        .single();
+    if (error) throw error;
+    return data;
+}
+
+export async function updateBlogPost(id: number, input: BlogPostInput) {
+    const { data, error } = await supabase
+        .from("blog_posts")
+        .update(input)
+        .eq("id", id)
+        .select()
+        .single();
+    if (error) throw error;
+    return data;
+}
+
+export async function deleteBlogPost(id: number) {
+    const { error } = await supabase.from("blog_posts").delete().eq("id", id);
+    if (error) throw error;
+}
+</file>
+
 <file path="src/index.css">
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;1,500&display=swap');
 
@@ -1832,6 +3088,45 @@ export const mockBlogPosts: BlogPost[] = [
 }
 </file>
 
+<file path="src/lib/supabase.ts">
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+
+export const supabase = createClient(supabaseUrl, supabaseKey);
+
+export type CategoryDB = {
+    id: number;
+    name: string;
+    slug: string;
+    image: string;
+    created_at: string;
+};
+
+export type ProductDB = {
+    id: number;
+    name: string;
+    description: string;
+    price: number;
+    category_id: number;
+    image: string;
+    created_at: string;
+    categories?: { name: string; slug: string };
+};
+
+export type BlogPostDB = {
+    id: number;
+    title: string;
+    content: string;
+    excerpt: string;
+    cover_image: string;
+    category: string;
+    published_at: string;
+    created_at: string;
+};
+</file>
+
 <file path="src/lib/utils.ts">
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
@@ -1846,7 +3141,6 @@ export const WHATSAPP_NUMBER = "2290166990841";
 
 export function getWhatsAppLink(product?: {
     name: string;
-    sku: string;
     price: number;
 }) {
     const base = `https://wa.me/${WHATSAPP_NUMBER}`;
@@ -1858,8 +3152,7 @@ export function getWhatsAppLink(product?: {
     const msg =
         "Bonjour, je suis interesse(e) par le produit " +
         '"' + product.name + '"' +
-        " (Ref: " + product.sku +
-        ", Prix: " + product.price.toLocaleString() + " FCFA)." +
+        " (Prix: " + product.price.toLocaleString() + " FCFA)." +
         " Est-il encore disponible ?";
 
     return `${base}?text=${encodeURIComponent(msg)}`;
@@ -1933,7 +3226,20 @@ import {
 } from "@/components/ui/table";
 import { useAdmin } from "@/stores/useAdmin";
 import { useTheme } from "@/stores/useTheme";
-import { mockProducts, mockCategories, mockBlogPosts } from "@/data/mock";
+import { useToast } from "@/stores/useToast";
+import {
+    useAdminProducts,
+    useAdminCategories,
+    useAdminBlogPosts,
+    deleteProduct,
+    deleteCategory,
+    deleteBlogPost,
+} from "@/hooks/useSupabase";
+import type { ProductDB, CategoryDB, BlogPostDB } from "@/lib/supabase";
+import ProductFormDialog from "@/components/admin/ProductFormDialog";
+import CategoryFormDialog from "@/components/admin/CategoryFormDialog";
+import BlogFormDialog from "@/components/admin/BlogFormDialog";
+import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import { motion } from "framer-motion";
 
 export default function AdminDashboard() {
@@ -1947,7 +3253,6 @@ export default function AdminDashboard() {
 
     return (
         <div className="min-h-screen bg-muted/20">
-            {/* Header Admin Glassmorphism */}
             <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md px-6 py-4 shadow-sm">
                 <div className="mx-auto flex max-w-7xl items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -1963,7 +3268,7 @@ export default function AdminDashboard() {
                     </div>
                     <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2 rounded-full font-semibold border-border/50 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-colors">
                         <LogOut className="h-4 w-4" />
-                        Déconnexion
+                        Deconnexion
                     </Button>
                 </div>
             </header>
@@ -1985,7 +3290,7 @@ export default function AdminDashboard() {
                             </TabsTrigger>
                             <TabsTrigger value="categories" className="gap-2 rounded-xl px-6 py-2.5 data-[state=active]:shadow-sm">
                                 <Tag className="h-4 w-4" />
-                                Catégories
+                                Categories
                             </TabsTrigger>
                             <TabsTrigger value="blog" className="gap-2 rounded-xl px-6 py-2.5 data-[state=active]:shadow-sm">
                                 <FileText className="h-4 w-4" />
@@ -1993,7 +3298,7 @@ export default function AdminDashboard() {
                             </TabsTrigger>
                             <TabsTrigger value="theme" className="gap-2 rounded-xl px-6 py-2.5 data-[state=active]:shadow-sm">
                                 <Palette className="h-4 w-4" />
-                                Thème
+                                Theme
                             </TabsTrigger>
                         </TabsList>
 
@@ -2009,10 +3314,14 @@ export default function AdminDashboard() {
 }
 
 function StatsRow() {
+    const { products } = useAdminProducts();
+    const { categories } = useAdminCategories();
+    const { posts } = useAdminBlogPosts();
+
     const stats = [
-        { icon: Package, label: "Produits Actifs", value: mockProducts.length, color: "text-blue-500", bg: "bg-blue-500/10" },
-        { icon: Tag, label: "Catégories", value: mockCategories.length, color: "text-purple-500", bg: "bg-purple-500/10" },
-        { icon: FileText, label: "Articles Publiés", value: mockBlogPosts.length, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+        { icon: Package, label: "Produits Actifs", value: products.length, color: "text-blue-500", bg: "bg-blue-500/10" },
+        { icon: Tag, label: "Categories", value: categories.length, color: "text-purple-500", bg: "bg-purple-500/10" },
+        { icon: FileText, label: "Articles Publies", value: posts.length, color: "text-emerald-500", bg: "bg-emerald-500/10" },
         { icon: Package, label: "Commandes", value: 0, color: "text-orange-500", bg: "bg-orange-500/10" },
     ];
 
@@ -2042,163 +3351,372 @@ function StatsRow() {
 }
 
 function ProductsTab() {
+    const { products, loading, refetch } = useAdminProducts();
+    const { categories } = useAdminCategories();
+    const { showToast } = useToast();
+
+    const [formOpen, setFormOpen] = useState(false);
+    const [editingProduct, setEditingProduct] = useState<ProductDB | null>(null);
+
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [deletingProduct, setDeletingProduct] = useState<ProductDB | null>(null);
+    const [deleting, setDeleting] = useState(false);
+
+    function openCreate() {
+        setEditingProduct(null);
+        setFormOpen(true);
+    }
+
+    function openEdit(product: ProductDB) {
+        setEditingProduct(product);
+        setFormOpen(true);
+    }
+
+    function askDelete(product: ProductDB) {
+        setDeletingProduct(product);
+        setConfirmOpen(true);
+    }
+
+    async function confirmDelete() {
+        if (!deletingProduct) return;
+        setDeleting(true);
+        try {
+            await deleteProduct(deletingProduct.id);
+            showToast("success", "Produit supprime avec succes.");
+            refetch();
+            setConfirmOpen(false);
+        } catch {
+            showToast("error", "Impossible de supprimer ce produit.");
+        } finally {
+            setDeleting(false);
+        }
+    }
+
     return (
         <div className="overflow-hidden rounded-3xl bg-card border border-border/40 shadow-sm">
             <div className="flex items-center justify-between border-b border-border/40 bg-muted/10 px-8 py-5">
                 <h3 className="font-display text-xl font-bold">Gestion des Produits</h3>
-                <Button size="sm" className="gap-2 rounded-full font-semibold shadow-md">
+                <Button size="sm" className="gap-2 rounded-full font-semibold shadow-md" onClick={openCreate}>
                     <Plus className="h-4 w-4" />
                     Nouveau
                 </Button>
             </div>
             <div className="p-0">
-                <Table>
-                    <TableHeader className="bg-muted/30">
-                        <TableRow className="hover:bg-transparent border-border/40">
-                            <TableHead className="px-8 py-4 font-semibold text-foreground">Produit</TableHead>
-                            <TableHead className="font-semibold text-foreground">Catégorie</TableHead>
-                            <TableHead className="font-semibold text-foreground">Prix</TableHead>
-                            <TableHead className="text-right px-8 font-semibold text-foreground">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {mockProducts.map((product) => (
-                            <TableRow key={product.id} className="border-border/20 hover:bg-muted/30 transition-colors">
-                                <TableCell className="px-8 py-4">
-                                    <div className="flex items-center gap-4">
-                                        <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-muted border border-border/40 shadow-sm">
-                                            <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <span className="font-bold text-foreground">{product.name}</span>
-                                            <span className="text-xs text-muted-foreground font-medium">Réf: {product.sku}</span>
-                                        </div>
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    <span className="inline-flex items-center rounded-full bg-secondary/10 px-2.5 py-1 text-xs font-semibold text-secondary">
-                                        {product.categoryName}
-                                    </span>
-                                </TableCell>
-                                <TableCell className="font-bold text-primary">
-                                    {product.price.toLocaleString()} FCFA
-                                </TableCell>
-                                <TableCell className="text-right px-8">
-                                    <div className="flex items-center justify-end gap-2">
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-foreground/5">
-                                            <Pencil className="h-4 w-4" />
-                                        </Button>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive">
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                </TableCell>
+                {loading ? (
+                    <div className="p-8 text-center text-sm text-muted-foreground">
+                        Chargement des produits...
+                    </div>
+                ) : products.length === 0 ? (
+                    <div className="p-8 text-center text-sm text-muted-foreground">
+                        Aucun produit pour le moment.
+                    </div>
+                ) : (
+                    <Table>
+                        <TableHeader className="bg-muted/30">
+                            <TableRow className="hover:bg-transparent border-border/40">
+                                <TableHead className="px-8 py-4 font-semibold text-foreground">Produit</TableHead>
+                                <TableHead className="font-semibold text-foreground">Categorie</TableHead>
+                                <TableHead className="font-semibold text-foreground">Prix</TableHead>
+                                <TableHead className="text-right px-8 font-semibold text-foreground">Actions</TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                        </TableHeader>
+                        <TableBody>
+                            {products.map((product) => (
+                                <TableRow key={product.id} className="border-border/20 hover:bg-muted/30 transition-colors">
+                                    <TableCell className="px-8 py-4">
+                                        <div className="flex items-center gap-4">
+                                            <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-muted border border-border/40 shadow-sm">
+                                                <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="font-bold text-foreground">{product.name}</span>
+                                                <span className="text-xs text-muted-foreground font-medium">Ref: {product.sku}</span>
+                                            </div>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <span className="inline-flex items-center rounded-full bg-secondary/10 px-2.5 py-1 text-xs font-semibold text-secondary">
+                                            {product.categories?.name || "-"}
+                                        </span>
+                                    </TableCell>
+                                    <TableCell className="font-bold text-primary">
+                                        {product.price.toLocaleString()} FCFA
+                                    </TableCell>
+                                    <TableCell className="text-right px-8">
+                                        <div className="flex items-center justify-end gap-2">
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-foreground/5" onClick={() => openEdit(product)}>
+                                                <Pencil className="h-4 w-4" />
+                                            </Button>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => askDelete(product)}>
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                )}
             </div>
+
+            <ProductFormDialog
+                open={formOpen}
+                onOpenChange={setFormOpen}
+                product={editingProduct}
+                categories={categories}
+                onSuccess={refetch}
+            />
+
+            <ConfirmDialog
+                open={confirmOpen}
+                onOpenChange={setConfirmOpen}
+                title="Supprimer ce produit ?"
+                description={
+                    "Cette action est irreversible. " +
+                    (deletingProduct ? "Le produit \"" + deletingProduct.name + "\" sera definitivement supprime." : "")
+                }
+                onConfirm={confirmDelete}
+                loading={deleting}
+            />
         </div>
     );
 }
 
 function CategoriesTab() {
+    const { categories, loading, refetch } = useAdminCategories();
+    const { showToast } = useToast();
+
+    const [formOpen, setFormOpen] = useState(false);
+    const [editingCategory, setEditingCategory] = useState<CategoryDB | null>(null);
+
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [deletingCategory, setDeletingCategory] = useState<CategoryDB | null>(null);
+    const [deleting, setDeleting] = useState(false);
+
+    function openCreate() {
+        setEditingCategory(null);
+        setFormOpen(true);
+    }
+
+    function openEdit(category: CategoryDB) {
+        setEditingCategory(category);
+        setFormOpen(true);
+    }
+
+    function askDelete(category: CategoryDB) {
+        setDeletingCategory(category);
+        setConfirmOpen(true);
+    }
+
+    async function confirmDelete() {
+        if (!deletingCategory) return;
+        setDeleting(true);
+        try {
+            await deleteCategory(deletingCategory.id);
+            showToast("success", "Categorie supprimee avec succes.");
+            refetch();
+            setConfirmOpen(false);
+        } catch {
+            showToast("error", "Impossible de supprimer cette categorie. Verifiez qu'aucun produit n'y est lie.");
+        } finally {
+            setDeleting(false);
+        }
+    }
+
     return (
         <div className="overflow-hidden rounded-3xl bg-card border border-border/40 shadow-sm">
             <div className="flex items-center justify-between border-b border-border/40 bg-muted/10 px-8 py-5">
-                <h3 className="font-display text-xl font-bold">Gestion des Catégories</h3>
-                <Button size="sm" className="gap-2 rounded-full font-semibold shadow-md">
+                <h3 className="font-display text-xl font-bold">Gestion des Categories</h3>
+                <Button size="sm" className="gap-2 rounded-full font-semibold shadow-md" onClick={openCreate}>
                     <Plus className="h-4 w-4" />
                     Nouvelle
                 </Button>
             </div>
             <div className="p-0">
-                <Table>
-                    <TableHeader className="bg-muted/30">
-                        <TableRow className="hover:bg-transparent border-border/40">
-                            <TableHead className="px-8 py-4 font-semibold text-foreground">Nom</TableHead>
-                            <TableHead className="font-semibold text-foreground">Slug (URL)</TableHead>
-                            <TableHead className="text-right px-8 font-semibold text-foreground">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {mockCategories.map((cat) => (
-                            <TableRow key={cat.id} className="border-border/20 hover:bg-muted/30 transition-colors">
-                                <TableCell className="px-8 py-4 font-bold text-foreground">{cat.name}</TableCell>
-                                <TableCell className="text-muted-foreground font-mono text-sm">{cat.slug}</TableCell>
-                                <TableCell className="text-right px-8">
-                                    <div className="flex items-center justify-end gap-2">
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-foreground/5">
-                                            <Pencil className="h-4 w-4" />
-                                        </Button>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive">
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                </TableCell>
+                {loading ? (
+                    <div className="p-8 text-center text-sm text-muted-foreground">
+                        Chargement des categories...
+                    </div>
+                ) : categories.length === 0 ? (
+                    <div className="p-8 text-center text-sm text-muted-foreground">
+                        Aucune categorie pour le moment.
+                    </div>
+                ) : (
+                    <Table>
+                        <TableHeader className="bg-muted/30">
+                            <TableRow className="hover:bg-transparent border-border/40">
+                                <TableHead className="px-8 py-4 font-semibold text-foreground">Nom</TableHead>
+                                <TableHead className="font-semibold text-foreground">Slug (URL)</TableHead>
+                                <TableHead className="text-right px-8 font-semibold text-foreground">Actions</TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                        </TableHeader>
+                        <TableBody>
+                            {categories.map((cat) => (
+                                <TableRow key={cat.id} className="border-border/20 hover:bg-muted/30 transition-colors">
+                                    <TableCell className="px-8 py-4 font-bold text-foreground">{cat.name}</TableCell>
+                                    <TableCell className="text-muted-foreground font-mono text-sm">{cat.slug}</TableCell>
+                                    <TableCell className="text-right px-8">
+                                        <div className="flex items-center justify-end gap-2">
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-foreground/5" onClick={() => openEdit(cat)}>
+                                                <Pencil className="h-4 w-4" />
+                                            </Button>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => askDelete(cat)}>
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                )}
             </div>
+
+            <CategoryFormDialog
+                open={formOpen}
+                onOpenChange={setFormOpen}
+                category={editingCategory}
+                onSuccess={refetch}
+            />
+
+            <ConfirmDialog
+                open={confirmOpen}
+                onOpenChange={setConfirmOpen}
+                title="Supprimer cette categorie ?"
+                description={
+                    "Cette action est irreversible. " +
+                    (deletingCategory ? "La categorie \"" + deletingCategory.name + "\" sera definitivement supprimee." : "")
+                }
+                onConfirm={confirmDelete}
+                loading={deleting}
+            />
         </div>
     );
 }
 
 function BlogTab() {
+    const { posts, loading, refetch } = useAdminBlogPosts();
+    const { showToast } = useToast();
+
+    const [formOpen, setFormOpen] = useState(false);
+    const [editingPost, setEditingPost] = useState<BlogPostDB | null>(null);
+
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [deletingPost, setDeletingPost] = useState<BlogPostDB | null>(null);
+    const [deleting, setDeleting] = useState(false);
+
+    function openCreate() {
+        setEditingPost(null);
+        setFormOpen(true);
+    }
+
+    function openEdit(post: BlogPostDB) {
+        setEditingPost(post);
+        setFormOpen(true);
+    }
+
+    function askDelete(post: BlogPostDB) {
+        setDeletingPost(post);
+        setConfirmOpen(true);
+    }
+
+    async function confirmDelete() {
+        if (!deletingPost) return;
+        setDeleting(true);
+        try {
+            await deleteBlogPost(deletingPost.id);
+            showToast("success", "Article supprime avec succes.");
+            refetch();
+            setConfirmOpen(false);
+        } catch {
+            showToast("error", "Impossible de supprimer cet article.");
+        } finally {
+            setDeleting(false);
+        }
+    }
+
     return (
         <div className="overflow-hidden rounded-3xl bg-card border border-border/40 shadow-sm">
             <div className="flex items-center justify-between border-b border-border/40 bg-muted/10 px-8 py-5">
                 <h3 className="font-display text-xl font-bold">Articles de Blog</h3>
-                <Button size="sm" className="gap-2 rounded-full font-semibold shadow-md">
+                <Button size="sm" className="gap-2 rounded-full font-semibold shadow-md" onClick={openCreate}>
                     <Plus className="h-4 w-4" />
                     Nouveau
                 </Button>
             </div>
             <div className="p-0">
-                <Table>
-                    <TableHeader className="bg-muted/30">
-                        <TableRow className="hover:bg-transparent border-border/40">
-                            <TableHead className="px-8 py-4 font-semibold text-foreground">Titre</TableHead>
-                            <TableHead className="font-semibold text-foreground">Catégorie</TableHead>
-                            <TableHead className="font-semibold text-foreground">Date</TableHead>
-                            <TableHead className="text-right px-8 font-semibold text-foreground">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {mockBlogPosts.map((post) => (
-                            <TableRow key={post.id} className="border-border/20 hover:bg-muted/30 transition-colors">
-                                <TableCell className="px-8 py-4">
-                                    <div className="flex items-center gap-4">
-                                        <div className="h-10 w-16 shrink-0 overflow-hidden rounded-lg bg-muted border border-border/40">
-                                            <img src={post.coverImage} alt={post.title} className="h-full w-full object-cover" />
-                                        </div>
-                                        <span className="font-bold text-foreground max-w-xs truncate">{post.title}</span>
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-                                        {post.category}
-                                    </span>
-                                </TableCell>
-                                <TableCell className="text-muted-foreground font-medium text-sm">
-                                    {post.publishedAt}
-                                </TableCell>
-                                <TableCell className="text-right px-8">
-                                    <div className="flex items-center justify-end gap-2">
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-foreground/5">
-                                            <Pencil className="h-4 w-4" />
-                                        </Button>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive">
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                </TableCell>
+                {loading ? (
+                    <div className="p-8 text-center text-sm text-muted-foreground">
+                        Chargement des articles...
+                    </div>
+                ) : posts.length === 0 ? (
+                    <div className="p-8 text-center text-sm text-muted-foreground">
+                        Aucun article pour le moment.
+                    </div>
+                ) : (
+                    <Table>
+                        <TableHeader className="bg-muted/30">
+                            <TableRow className="hover:bg-transparent border-border/40">
+                                <TableHead className="px-8 py-4 font-semibold text-foreground">Titre</TableHead>
+                                <TableHead className="font-semibold text-foreground">Categorie</TableHead>
+                                <TableHead className="font-semibold text-foreground">Date</TableHead>
+                                <TableHead className="text-right px-8 font-semibold text-foreground">Actions</TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                        </TableHeader>
+                        <TableBody>
+                            {posts.map((post) => (
+                                <TableRow key={post.id} className="border-border/20 hover:bg-muted/30 transition-colors">
+                                    <TableCell className="px-8 py-4">
+                                        <div className="flex items-center gap-4">
+                                            <div className="h-10 w-16 shrink-0 overflow-hidden rounded-lg bg-muted border border-border/40">
+                                                <img src={post.cover_image} alt={post.title} className="h-full w-full object-cover" />
+                                            </div>
+                                            <span className="font-bold text-foreground max-w-xs truncate">{post.title}</span>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                                            {post.category}
+                                        </span>
+                                    </TableCell>
+                                    <TableCell className="text-muted-foreground font-medium text-sm">
+                                        {post.published_at}
+                                    </TableCell>
+                                    <TableCell className="text-right px-8">
+                                        <div className="flex items-center justify-end gap-2">
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-foreground/5" onClick={() => openEdit(post)}>
+                                                <Pencil className="h-4 w-4" />
+                                            </Button>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => askDelete(post)}>
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                )}
             </div>
+
+            <BlogFormDialog
+                open={formOpen}
+                onOpenChange={setFormOpen}
+                post={editingPost}
+                onSuccess={refetch}
+            />
+
+            <ConfirmDialog
+                open={confirmOpen}
+                onOpenChange={setConfirmOpen}
+                title="Supprimer cet article ?"
+                description={
+                    "Cette action est irreversible. " +
+                    (deletingPost ? "L'article \"" + deletingPost.title + "\" sera definitivement supprime." : "")
+                }
+                onConfirm={confirmDelete}
+                loading={deleting}
+            />
         </div>
     );
 }
@@ -2210,11 +3728,11 @@ function ThemeTab() {
     const [saved, setSaved] = useState(false);
 
     const presets = [
-        { label: "Orange + Vert (défaut)", primary: "24 95% 53%", secondary: "142 71% 35%" },
+        { label: "Orange + Vert (defaut)", primary: "24 95% 53%", secondary: "142 71% 35%" },
         { label: "Bleu + Violet", primary: "217 91% 60%", secondary: "263 70% 50%" },
         { label: "Rose + Orange", primary: "330 81% 60%", secondary: "24 95% 53%" },
         { label: "Violet + Rose", primary: "263 70% 50%", secondary: "330 81% 60%" },
-        { label: "Teal + Émeraude", primary: "172 66% 50%", secondary: "142 71% 35%" },
+        { label: "Teal + Emeraude", primary: "172 66% 50%", secondary: "142 71% 35%" },
     ];
 
     function handleSave() {
@@ -2274,13 +3792,13 @@ function ThemeTab() {
                     </div>
 
                     <Button onClick={handleSave} className="mt-4 rounded-xl h-12 text-base font-bold shadow-md transition-all hover:-translate-y-0.5">
-                        {saved ? "Sauvegardé avec succès !" : "Appliquer les couleurs"}
+                        {saved ? "Sauvegarde avec succes !" : "Appliquer les couleurs"}
                     </Button>
                 </div>
             </div>
 
             <div className="rounded-3xl bg-card p-8 border border-border/40 shadow-sm">
-                <h3 className="font-display text-2xl font-bold mb-6">Thèmes Prédéfinis</h3>
+                <h3 className="font-display text-2xl font-bold mb-6">Themes Predefinis</h3>
                 <div className="flex flex-col gap-3">
                     {presets.map((preset) => (
                         <button
@@ -2416,400 +3934,47 @@ export default function AdminLogin() {
 }
 </file>
 
-<file path="src/pages/Blog.tsx">
-import { Link } from "react-router-dom";
-import { mockBlogPosts } from "@/data/mock";
-
-function formatDate(dateStr: string) {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString("fr-FR", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-    });
-}
-
-export default function Blog() {
-    return (
-        <div>
-            <section className="bg-accent">
-                <div className="mx-auto max-w-7xl px-4 py-16 md:px-8">
-                    <h1 className="font-display text-4xl font-semibold text-foreground md:text-5xl">
-                        Notre blog
-                    </h1>
-                    <p className="mt-3 text-sm text-muted-foreground">
-                        Inspirations, tendances et conseils pour votre style de vie.
-                    </p>
-                </div>
-            </section>
-
-            <section className="mx-auto max-w-7xl px-4 py-16 md:px-8">
-                <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-                    {mockBlogPosts.map((post) => (
-                        <Link
-                            key={post.id}
-                            to={"/blog/" + post.id}
-                            className="group block overflow-hidden rounded-xl bg-card shadow-premium transition-shadow hover:shadow-premium-lg"
-                        >
-                            <div className="aspect-video overflow-hidden bg-muted">
-                                <img
-                                    src={post.coverImage}
-                                    alt={post.title}
-                                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                />
-                            </div>
-                            <div className="p-6">
-                                <div className="flex items-center gap-3 mb-3">
-                                    <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                                        {post.category}
-                                    </span>
-                                    <span className="text-xs text-muted-foreground">
-                                        {formatDate(post.publishedAt)}
-                                    </span>
-                                </div>
-                                <h2 className="font-display text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
-                                    {post.title}
-                                </h2>
-                                <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
-                                    {post.excerpt}
-                                </p>
-                                <span className="mt-4 inline-block text-sm font-medium text-primary">
-                                    Lire la suite
-                                </span>
-                            </div>
-                        </Link>
-                    ))}
-                </div>
-            </section>
-        </div>
-    );
-}
-</file>
-
-<file path="src/pages/BlogDetail.tsx">
-import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Calendar, Tag } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { mockBlogPosts } from "@/data/mock";
-
-function formatDate(dateStr: string) {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString("fr-FR", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-    });
-}
-
-export default function BlogDetail() {
-    const { id } = useParams();
-    const post = mockBlogPosts.find((p) => p.id === Number(id));
-
-    const related = mockBlogPosts.filter((p) => p.id !== Number(id)).slice(0, 2);
-
-    if (!post) {
-        return (
-            <div className="mx-auto flex max-w-7xl flex-col items-center px-4 py-32 text-center">
-                <p className="font-display text-2xl text-foreground">
-                    Article non trouve
-                </p>
-                <Link to="/blog" className="mt-4 text-sm text-primary hover:underline">
-                    Retour au blog
-                </Link>
-            </div>
-        );
-    }
-
-    const paragraphs = post.content.split("\n\n").filter(Boolean);
-
-    return (
-        <div>
-            <div className="relative h-72 overflow-hidden bg-muted md:h-96">
-                <img
-                    src={post.coverImage}
-                    alt={post.title}
-                    className="h-full w-full object-cover"
-                />
-                <div className="absolute inset-0 bg-black/50" />
-                <div className="absolute inset-0 flex items-end">
-                    <div className="mx-auto w-full max-w-3xl px-4 pb-10 md:px-8">
-                        <div className="flex items-center gap-3 mb-4">
-                            <span className="rounded-full bg-primary px-3 py-1 text-xs font-medium text-white">
-                                {post.category}
-                            </span>
-                        </div>
-                        <h1 className="font-display text-3xl font-semibold text-white md:text-4xl">
-                            {post.title}
-                        </h1>
-                    </div>
-                </div>
-            </div>
-
-            <div className="mx-auto max-w-3xl px-4 py-12 md:px-8">
-                <div className="flex items-center gap-6 mb-10 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
-                        {formatDate(post.publishedAt)}
-                    </span>
-                    <span className="flex items-center gap-2">
-                        <Tag className="h-4 w-4" />
-                        {post.category}
-                    </span>
-                </div>
-
-                <div className="prose-custom">
-                    {paragraphs.map((paragraph, index) => (
-                        <p
-                            key={index}
-                            className="mb-6 text-base leading-relaxed text-foreground/80"
-                        >
-                            {paragraph}
-                        </p>
-                    ))}
-                </div>
-
-                <div className="mt-12 border-t border-border pt-8">
-                    <Button asChild variant="outline" className="gap-2">
-                        <Link to="/blog">
-                            <ArrowLeft className="h-4 w-4" />
-                            Retour au blog
-                        </Link>
-                    </Button>
-                </div>
-            </div>
-
-            {related.length > 0 && (
-                <section className="bg-muted/40 py-16">
-                    <div className="mx-auto max-w-7xl px-4 md:px-8">
-                        <h2 className="font-display text-2xl font-semibold text-foreground mb-8">
-                            Articles similaires
-                        </h2>
-                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                            {related.map((rpost) => (
-                                <Link
-                                    key={rpost.id}
-                                    to={"/blog/" + rpost.id}
-                                    className="group flex gap-4 rounded-xl bg-card p-4 shadow-premium transition-shadow hover:shadow-premium-lg"
-                                >
-                                    <div className="h-20 w-28 flex-shrink-0 overflow-hidden rounded-lg bg-muted">
-                                        <img
-                                            src={rpost.coverImage}
-                                            alt={rpost.title}
-                                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                        />
-                                    </div>
-                                    <div>
-                                        <span className="text-xs font-medium text-primary">
-                                            {rpost.category}
-                                        </span>
-                                        <h3 className="font-display mt-1 text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
-                                            {rpost.title}
-                                        </h3>
-                                        <p className="mt-1 text-xs text-muted-foreground">
-                                            {formatDate(rpost.publishedAt)}
-                                        </p>
-                                    </div>
-                                </Link>
-                            ))}
-                        </div>
-                    </div>
-                </section>
-            )}
-        </div>
-    );
-}
-</file>
-
-<file path="src/pages/Catalogue.tsx">
-import { useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import { PackageX, SlidersHorizontal } from "lucide-react";
-import ProductCard from "@/components/ProductCard";
-import { mockCategories, mockProducts } from "@/data/mock";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import { motion, AnimatePresence } from "framer-motion";
-
-export default function Catalogue() {
-    const [searchParams, setSearchParams] = useSearchParams();
-    const activeSlug = searchParams.get("category");
-    const [sort, setSort] = useState<"recent" | "price_asc" | "price_desc">("recent");
-
-    const activeCategory = mockCategories.find((c) => c.slug === activeSlug);
-
-    const filteredProducts = useMemo(() => {
-        let result = activeCategory
-            ? mockProducts.filter((p) => p.categoryId === activeCategory.id)
-            : mockProducts;
-
-        result = [...result].sort((a, b) => {
-            if (sort === "price_asc") return a.price - b.price;
-            if (sort === "price_desc") return b.price - a.price;
-            return b.id - a.id;
-        });
-
-        return result;
-    }, [activeCategory, sort]);
-
-    function handleCategoryClick(slug?: string) {
-        if (slug) {
-            setSearchParams({ category: slug });
-        } else {
-            setSearchParams({});
-        }
-    }
-
-    return (
-        <div className="min-h-screen bg-background pb-24">
-            {/* En-tête Animé */}
-            <section className="relative bg-accent/30 py-16 md:py-24 border-b border-border/40">
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background" />
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                    className="relative mx-auto max-w-7xl px-4 text-center md:px-8"
-                >
-                    <h1 className="font-display text-4xl font-bold text-foreground md:text-6xl">
-                        Notre catalogue
-                    </h1>
-                    <p className="mt-4 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                        {filteredProducts.length} pièce{filteredProducts.length > 1 ? "s" : ""} unique{filteredProducts.length > 1 ? "s" : ""}
-                    </p>
-                </motion.div>
-            </section>
-
-            {/* Filtres + Grille */}
-            <section className="mx-auto max-w-7xl px-4 py-8 md:px-8">
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-12">
-
-                    {/* Pilules de catégories */}
-                    <div className="flex flex-wrap items-center gap-3">
-                        <button
-                            onClick={() => handleCategoryClick(undefined)}
-                            className={`rounded-full px-5 py-2.5 text-sm font-semibold transition-all duration-300 ${!activeSlug
-                                    ? "bg-foreground text-background shadow-md"
-                                    : "bg-muted/50 text-foreground hover:bg-muted"
-                                }`}
-                        >
-                            Tous
-                        </button>
-                        {mockCategories.map((cat) => (
-                            <button
-                                key={cat.id}
-                                onClick={() => handleCategoryClick(cat.slug)}
-                                className={`rounded-full px-5 py-2.5 text-sm font-semibold transition-all duration-300 ${activeSlug === cat.slug
-                                        ? "bg-foreground text-background shadow-md"
-                                        : "bg-muted/50 text-foreground hover:bg-muted"
-                                    }`}
-                            >
-                                {cat.name}
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* Menu de tri */}
-                    <div className="flex items-center gap-3 shrink-0 bg-muted/30 p-1.5 rounded-2xl border border-border/50">
-                        <div className="pl-3 text-muted-foreground">
-                            <SlidersHorizontal className="h-4 w-4" />
-                        </div>
-                        <Select value={sort} onValueChange={(value) => setSort(value as typeof sort)}>
-                            <SelectTrigger className="w-[180px] border-none bg-transparent shadow-none focus:ring-0 font-medium">
-                                <SelectValue placeholder="Trier par" />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-xl shadow-premium">
-                                <SelectItem value="recent">Plus récents</SelectItem>
-                                <SelectItem value="price_asc">Prix croissant</SelectItem>
-                                <SelectItem value="price_desc">Prix décroissant</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-
-                {/* Grille de produits */}
-                {filteredProducts.length === 0 ? (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="flex flex-col items-center justify-center gap-4 py-32"
-                    >
-                        <div className="rounded-full bg-muted/50 p-6 border border-border/50">
-                            <PackageX className="h-10 w-10 text-muted-foreground/50" />
-                        </div>
-                        <p className="text-base font-medium text-muted-foreground">
-                            Aucun trésor trouvé dans cette catégorie.
-                        </p>
-                    </motion.div>
-                ) : (
-                    <motion.div layout className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-                        <AnimatePresence mode="popLayout">
-                            {filteredProducts.map((product) => (
-                                /* Le prop "layout" permet aux cartes de glisser doucement quand on change le tri */
-                                <motion.div
-                                    layout
-                                    initial={{ opacity: 0, scale: 0.9 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.9 }}
-                                    transition={{ duration: 0.4 }}
-                                    key={product.id}
-                                >
-                                    <ProductCard product={product} />
-                                </motion.div>
-                            ))}
-                        </AnimatePresence>
-                    </motion.div>
-                )}
-            </section>
-        </div>
-    );
-}
-</file>
-
 <file path="src/pages/Home.tsx">
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import ProductCard from "@/components/ProductCard";
 import WhatsAppButton from "@/components/WhatsAppButton";
-import { mockCategories, mockProducts } from "@/data/mock";
+import { useCategories, useProducts, useBlogPosts } from "@/hooks/useSupabase";
 import { motion } from "framer-motion";
 
-// Fonction utilitaire pour éviter de répéter l'animation
-const fadeUpConfig = {
-    initial: { opacity: 0, y: 30 },
-    whileInView: { opacity: 1, y: 0 },
-    viewport: { once: true, margin: "-50px" },
-    transition: { duration: 0.6, ease: "easeOut" }
-};
+function formatDate(dateStr: string) {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("fr-FR", { month: "long", day: "numeric" });
+}
 
 export default function Home() {
+    const { categories } = useCategories();
+    const { products } = useProducts();
+    const { posts } = useBlogPosts();
+
     return (
         <div>
-            {/* HÉRO SECTION */}
             <section className="relative overflow-hidden bg-accent/30">
                 <div className="absolute inset-0 bg-gradient-to-b from-accent/50 to-transparent" />
                 <motion.div
-                    {...fadeUpConfig}
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6 }}
                     className="relative mx-auto flex max-w-7xl flex-col items-center px-4 py-32 text-center md:px-8 md:py-40"
                 >
-                    <span className="rounded-full border border-primary/30 bg-primary/5 px-5 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-primary backdrop-blur-sm">
+                    <span className="rounded-full border border-primary/30 bg-primary/5 px-5 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-primary">
                         Nouvelle collection
                     </span>
                     <h1 className="font-display mt-8 text-5xl font-bold leading-[1.1] text-foreground md:text-7xl">
-                        Des trésors
+                        Des tresors
                         <br />
                         <span className="text-primary italic">pour votre style</span>
                     </h1>
                     <p className="mt-6 max-w-xl text-base text-muted-foreground md:text-lg">
-                        JUDICKSHOP — Mode, Électronique et Bijoux soigneusement sélectionnés pour vous, livrés chez vous.
+                        JUDICKSHOP — Mode, Electronique et Bijoux soigneusement selectionnes pour vous.
                     </p>
                     <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-                        <Button asChild size="lg" className="gap-2 rounded-full px-8 py-6 text-base shadow-xl transition-transform hover:-translate-y-1">
+                        <Button asChild size="lg" className="gap-2 rounded-full px-8 py-6 text-base shadow-xl">
                             <Link to="/catalogue">
                                 Explorer le catalogue
                                 <ArrowRight className="h-5 w-5" />
@@ -2819,13 +3984,20 @@ export default function Home() {
                 </motion.div>
             </section>
 
-            {/* CATÉGORIES */}
+            {/* Categories */}
             <section className="mx-auto max-w-7xl px-4 py-24 md:px-8">
-                <motion.h2 {...fadeUpConfig} className="font-display text-center text-3xl font-bold text-foreground md:text-5xl">
+                <motion.h2
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5 }}
+                    className="font-display text-center text-3xl font-bold text-foreground md:text-5xl"
+                >
                     Explorez nos univers
                 </motion.h2>
+
                 <div className="mt-16 grid grid-cols-1 gap-6 md:grid-cols-3">
-                    {mockCategories.map((category, index) => (
+                    {categories.map((category, index) => (
                         <motion.div
                             key={category.id}
                             initial={{ opacity: 0, y: 30 }}
@@ -2835,16 +4007,16 @@ export default function Home() {
                         >
                             <Link
                                 to={"/catalogue?category=" + category.slug}
-                                className="group relative aspect-[4/5] overflow-hidden rounded-3xl shadow-md transition-all duration-500 block"
+                                className="group relative aspect-[4/5] overflow-hidden rounded-3xl shadow-md block"
                             >
                                 <img
                                     src={category.image}
                                     alt={category.name}
                                     className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                                 />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-opacity group-hover:opacity-90" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                                 <div className="absolute bottom-6 left-6 right-6">
-                                    <span className="font-display text-2xl font-semibold text-white tracking-wide">
+                                    <span className="font-display text-2xl font-semibold text-white">
                                         {category.name}
                                     </span>
                                 </div>
@@ -2854,12 +4026,12 @@ export default function Home() {
                 </div>
             </section>
 
-            {/* PRODUITS PHARES */}
+            {/* Produits phares */}
             <section className="bg-muted/20 py-24">
                 <div className="mx-auto max-w-7xl px-4 md:px-8">
-                    <motion.div {...fadeUpConfig} className="flex items-end justify-between mb-12">
+                    <div className="flex items-end justify-between mb-12">
                         <h2 className="font-display text-3xl font-bold text-foreground md:text-5xl">
-                            Nos pièces maîtresses
+                            Nos pieces maitresses
                         </h2>
                         <Link
                             to="/catalogue"
@@ -2867,10 +4039,10 @@ export default function Home() {
                         >
                             Voir tout <ArrowRight className="h-4 w-4" />
                         </Link>
-                    </motion.div>
+                    </div>
 
                     <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-                        {mockProducts.slice(0, 4).map((product, index) => (
+                        {products.slice(0, 4).map((product, index) => (
                             <motion.div
                                 key={product.id}
                                 initial={{ opacity: 0, y: 30 }}
@@ -2878,26 +4050,87 @@ export default function Home() {
                                 viewport={{ once: true }}
                                 transition={{ duration: 0.5, delay: index * 0.1 }}
                             >
-                                <ProductCard product={product} />
+                                <Link
+                                    to={"/produit/" + product.id}
+                                    className="group block overflow-hidden rounded-2xl bg-card border border-border/40 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:shadow-premium"
+                                >
+                                    <div className="aspect-[4/5] overflow-hidden bg-muted/30">
+                                        <img
+                                            src={product.image}
+                                            alt={product.name}
+                                            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                        />
+                                    </div>
+                                    <div className="p-5 flex flex-col gap-1">
+                                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                                            {product.categories?.name}
+                                        </span>
+                                        <h3 className="font-display text-lg text-foreground group-hover:text-primary transition-colors">
+                                            {product.name}
+                                        </h3>
+                                        <p className="font-display text-xl text-primary font-medium mt-1">
+                                            {product.price.toLocaleString()} FCFA
+                                        </p>
+                                    </div>
+                                </Link>
                             </motion.div>
                         ))}
                     </div>
                 </div>
             </section>
 
-            {/* CONTACT */}
-            <section className="mx-auto max-w-3xl px-4 py-32 text-center md:px-8">
-                <motion.div {...fadeUpConfig}>
-                    <h2 className="font-display text-3xl font-bold text-foreground md:text-5xl">
-                        Une demande spéciale ?
+            {/* Blog */}
+            <section className="mx-auto max-w-7xl px-4 py-20 md:px-8">
+                <div className="flex items-end justify-between mb-10">
+                    <h2 className="font-display text-3xl font-bold text-foreground md:text-4xl">
+                        Dernieres actualites
                     </h2>
-                    <p className="mt-6 text-lg text-muted-foreground">
-                        Notre équipe vous répond directement sur WhatsApp pour toute commande, conseil de style ou information.
-                    </p>
-                    <div className="mt-10 flex justify-center">
-                        <WhatsAppButton className="rounded-full px-8 py-6 text-base" />
-                    </div>
-                </motion.div>
+                    <Link
+                        to="/blog"
+                        className="hidden items-center gap-1 text-sm font-medium text-primary hover:underline md:flex"
+                    >
+                        Voir tout <ArrowRight className="h-4 w-4" />
+                    </Link>
+                </div>
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                    {posts.slice(0, 3).map((post) => (
+                        <Link
+                            key={post.id}
+                            to={"/blog/" + post.id}
+                            className="group block overflow-hidden rounded-xl bg-card shadow-premium transition-shadow hover:shadow-premium-lg"
+                        >
+                            <div className="aspect-video overflow-hidden bg-muted">
+                                <img
+                                    src={post.cover_image}
+                                    alt={post.title}
+                                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                />
+                            </div>
+                            <div className="p-5">
+                                <span className="text-xs font-medium text-primary">{post.category}</span>
+                                <h3 className="font-display mt-1 text-base font-semibold text-foreground group-hover:text-primary transition-colors">
+                                    {post.title}
+                                </h3>
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                    {formatDate(post.published_at)}
+                                </p>
+                            </div>
+                        </Link>
+                    ))}
+                </div>
+            </section>
+
+            {/* CTA WhatsApp */}
+            <section className="mx-auto max-w-3xl px-4 py-20 text-center md:px-8">
+                <h2 className="font-display text-3xl font-bold text-foreground md:text-4xl">
+                    Une question ?
+                </h2>
+                <p className="mt-4 text-muted-foreground">
+                    Notre equipe vous repond directement sur WhatsApp.
+                </p>
+                <div className="mt-8 flex justify-center">
+                    <WhatsAppButton className="rounded-full px-8 py-4 text-base" />
+                </div>
             </section>
         </div>
     );
@@ -2921,204 +4154,6 @@ export default function NotFound() {
             <Button asChild className="mt-8">
                 <Link to="/">Retour à l'accueil</Link>
             </Button>
-        </div>
-    );
-}
-</file>
-
-<file path="src/pages/ProductDetail.tsx">
-import { Link, useParams } from "react-router-dom";
-import { ShieldCheck, ShoppingBag, Truck, ChevronLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import WhatsAppButton from "@/components/WhatsAppButton";
-import ProductCard from "@/components/ProductCard";
-import { useCart } from "@/stores/useCart";
-import { mockProducts } from "@/data/mock";
-import { motion } from "framer-motion";
-
-// Configuration des animations
-const fadeInUp = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
-};
-
-const staggerContainer = {
-    hidden: { opacity: 0 },
-    visible: {
-        opacity: 1,
-        transition: {
-            staggerChildren: 0.1 // Fait apparaitre les éléments un par un avec un délai
-        }
-    }
-};
-
-export default function ProductDetail() {
-    const { id } = useParams<{ id: string }>();
-    const product = mockProducts.find((p) => p.id === Number(id));
-    const { addItem, setIsOpen } = useCart();
-
-    if (!product) {
-        return (
-            <div className="mx-auto flex min-h-[60vh] max-w-7xl flex-col items-center justify-center px-4 text-center">
-                <p className="font-display text-3xl font-bold text-foreground">
-                    Produit introuvable
-                </p>
-                <Link
-                    to="/catalogue"
-                    className="mt-6 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-primary hover:text-foreground transition-colors"
-                >
-                    <ChevronLeft className="h-4 w-4" />
-                    Retour au catalogue
-                </Link>
-            </div>
-        );
-    }
-
-    const relatedProducts = mockProducts
-        .filter((p) => p.categoryId === product.categoryId && p.id !== product.id)
-        .slice(0, 4);
-
-    function handleAddToCart() {
-        addItem({
-            id: product.id,
-            name: product.name,
-            price: product.price,
-            image: product.image,
-            sku: product.sku,
-        });
-        setIsOpen(true);
-    }
-
-    return (
-        <div className="min-h-screen bg-background pb-20">
-            {/* Bouton Retour élégant */}
-            <div className="mx-auto max-w-7xl px-4 pt-8 md:px-8">
-                <Link
-                    to="/catalogue"
-                    className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                >
-                    <ChevronLeft className="h-4 w-4" />
-                    Retour
-                </Link>
-            </div>
-
-            <section className="mx-auto max-w-7xl px-4 py-8 md:px-8 lg:py-12">
-                <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-20 items-center">
-
-                    {/* Colonne Gauche : Image animée */}
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.6, ease: "easeOut" }}
-                        className="aspect-[4/5] overflow-hidden rounded-3xl bg-muted/20 border border-border/40 shadow-sm"
-                    >
-                        <img
-                            src={product.image}
-                            alt={product.name}
-                            className="h-full w-full object-cover transition-transform duration-700 hover:scale-105"
-                        />
-                    </motion.div>
-
-                    {/* Colonne Droite : Textes animés en cascade */}
-                    <motion.div
-                        variants={staggerContainer}
-                        initial="hidden"
-                        animate="visible"
-                        className="flex flex-col justify-center"
-                    >
-                        <motion.span variants={fadeInUp} className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
-                            {product.categoryName}
-                        </motion.span>
-
-                        <motion.h1 variants={fadeInUp} className="font-display mt-3 text-4xl font-bold leading-tight text-foreground md:text-5xl">
-                            {product.name}
-                        </motion.h1>
-
-                        <motion.p variants={fadeInUp} className="font-display mt-6 text-3xl font-medium text-foreground/90">
-                            {product.price.toLocaleString()} FCFA
-                        </motion.p>
-
-                        <motion.div variants={fadeInUp} className="mt-8 h-px w-full bg-border/50" />
-
-                        <motion.p variants={fadeInUp} className="mt-8 max-w-lg text-base leading-relaxed text-muted-foreground">
-                            {product.description}
-                        </motion.p>
-
-                        <motion.p variants={fadeInUp} className="mt-4 text-xs font-medium text-muted-foreground/60 uppercase tracking-wider">
-                            Réf : {product.sku}
-                        </motion.p>
-
-                        {/* Boutons d'action arrondis */}
-                        <motion.div variants={fadeInUp} className="mt-10 flex flex-col gap-4 sm:flex-row">
-                            <WhatsAppButton
-                                product={{
-                                    name: product.name,
-                                    sku: product.sku,
-                                    price: product.price,
-                                }}
-                                className="flex-1 rounded-full py-6 text-base"
-                            />
-                            <Button
-                                variant="outline"
-                                size="lg"
-                                className="flex-1 gap-2 rounded-full py-6 text-base shadow-sm hover:-translate-y-1 transition-transform"
-                                onClick={handleAddToCart}
-                            >
-                                <ShoppingBag className="h-5 w-5" />
-                                Ajouter au panier
-                            </Button>
-                        </motion.div>
-
-                        {/* Réassurances */}
-                        <motion.div variants={fadeInUp} className="mt-12 flex flex-col gap-4 rounded-2xl bg-muted/30 p-6 border border-border/40">
-                            <div className="flex items-center gap-4 text-sm font-medium text-foreground/80">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-                                    <Truck className="h-5 w-5" />
-                                </div>
-                                Livraison rapide disponible
-                            </div>
-                            <div className="flex items-center gap-4 text-sm font-medium text-foreground/80">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-                                    <ShieldCheck className="h-5 w-5" />
-                                </div>
-                                Paiement sécurisé à la livraison
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                </div>
-            </section>
-
-            {/* Produits similaires */}
-            {relatedProducts.length > 0 && (
-                <section className="bg-muted/10 py-24 mt-12 border-t border-border/30">
-                    <div className="mx-auto max-w-7xl px-4 md:px-8">
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 0.5 }}
-                        >
-                            <h2 className="font-display text-3xl font-bold text-foreground">
-                                Vous aimerez aussi
-                            </h2>
-                        </motion.div>
-
-                        <div className="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-                            {relatedProducts.map((p, index) => (
-                                <motion.div
-                                    key={p.id}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    whileInView={{ opacity: 1, y: 0 }}
-                                    viewport={{ once: true }}
-                                    transition={{ duration: 0.5, delay: index * 0.1 }}
-                                >
-                                    <ProductCard product={p} />
-                                </motion.div>
-                            ))}
-                        </div>
-                    </div>
-                </section>
-            )}
         </div>
     );
 }
@@ -3169,7 +4204,6 @@ export interface CartItem {
     name: string;
     price: number;
     image: string;
-    sku: string;
     quantity: number;
 }
 
@@ -3381,21 +4415,19 @@ module.exports = {
       "vite/client"
     ],
     "skipLibCheck": true,
-    /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
-    /* Alias d'import (@/ pointe vers le dossier src) */
+    "ignoreDeprecations": "6.0",
     "baseUrl": ".",
     "paths": {
       "@/*": [
         "./src/*"
       ]
     },
-    /* Linting */
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
@@ -3455,6 +4487,17 @@ module.exports = {
 }
 </file>
 
+<file path="vercel.json">
+{
+    "rewrites": [
+        {
+            "source": "/(.*)",
+            "destination": "/index.html"
+        }
+    ]
+}
+</file>
+
 <file path="vite.config.ts">
 import path from "path";
 import react from "@vitejs/plugin-react";
@@ -3468,6 +4511,648 @@ export default defineConfig({
     },
   },
 });
+</file>
+
+<file path="package.json">
+{
+  "name": "judickshop-v2",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@fontsource-variable/geist": "^5.2.9",
+    "@supabase/supabase-js": "^2.110.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.42.2",
+    "lucide-react": "^1.22.0",
+    "radix-ui": "^1.6.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-router-dom": "^7.18.1",
+    "shadcn": "^4.12.0",
+    "tailwind-merge": "^3.6.0",
+    "tw-animate-css": "^1.4.0",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.2",
+    "autoprefixer": "^10.5.2",
+    "oxlint": "^1.69.0",
+    "postcss": "^8.5.16",
+    "tailwindcss": "^3.4.19",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "~6.0.2",
+    "vite": "^8.1.0"
+  }
+}
+</file>
+
+<file path="src/pages/Blog.tsx">
+import { Link } from "react-router-dom";
+import { useBlogPosts } from "@/hooks/useSupabase";
+
+function formatDate(dateStr: string) {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("fr-FR", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+    });
+}
+
+export default function Blog() {
+    const { posts, loading } = useBlogPosts();
+
+    return (
+        <div>
+            <section className="bg-accent">
+                <div className="mx-auto max-w-7xl px-4 py-16 md:px-8">
+                    <h1 className="font-display text-4xl font-semibold text-foreground md:text-5xl">
+                        Notre blog
+                    </h1>
+                    <p className="mt-3 text-sm text-muted-foreground">
+                        Inspirations, tendances et conseils pour votre style de vie.
+                    </p>
+                </div>
+            </section>
+
+            <section className="mx-auto max-w-7xl px-4 py-16 md:px-8">
+                {loading ? (
+                    <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+                        {Array.from({ length: 3 }).map((_, i) => (
+                            <div key={i} className="animate-pulse rounded-xl bg-muted">
+                                <div className="aspect-video bg-muted/50 rounded-t-xl" />
+                                <div className="p-6 flex flex-col gap-3">
+                                    <div className="h-3 w-1/4 rounded bg-muted-foreground/20" />
+                                    <div className="h-5 w-3/4 rounded bg-muted-foreground/20" />
+                                    <div className="h-3 w-1/2 rounded bg-muted-foreground/20" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+                        {posts.map((post) => (
+                            <Link
+                                key={post.id}
+                                to={"/blog/" + post.id}
+                                className="group block overflow-hidden rounded-xl bg-card shadow-premium transition-shadow hover:shadow-premium-lg"
+                            >
+                                <div className="aspect-video overflow-hidden bg-muted">
+                                    <img
+                                        src={post.cover_image}
+                                        alt={post.title}
+                                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                    />
+                                </div>
+                                <div className="p-6">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                                            {post.category}
+                                        </span>
+                                        <span className="text-xs text-muted-foreground">
+                                            {formatDate(post.published_at)}
+                                        </span>
+                                    </div>
+                                    <h2 className="font-display text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
+                                        {post.title}
+                                    </h2>
+                                    <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
+                                        {post.excerpt}
+                                    </p>
+                                    <span className="mt-4 inline-block text-sm font-medium text-primary">
+                                        Lire la suite
+                                    </span>
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
+                )}
+            </section>
+        </div>
+    );
+}
+</file>
+
+<file path="src/pages/BlogDetail.tsx">
+import { Link, useParams } from "react-router-dom";
+import { ArrowLeft, Calendar, Tag } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useBlogPost, useBlogPosts } from "@/hooks/useSupabase";
+
+function formatDate(dateStr: string) {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("fr-FR", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+    });
+}
+
+export default function BlogDetail() {
+    const { id } = useParams();
+    const { post, loading } = useBlogPost(Number(id));
+    const { posts: allPosts } = useBlogPosts();
+
+    const related = allPosts.filter((p) => p.id !== Number(id)).slice(0, 2);
+
+    if (loading) {
+        return (
+            <div className="animate-pulse">
+                <div className="h-72 bg-muted md:h-96" />
+                <div className="mx-auto max-w-3xl px-4 py-12 flex flex-col gap-4">
+                    <div className="h-4 w-1/4 rounded bg-muted" />
+                    <div className="h-8 w-3/4 rounded bg-muted" />
+                    <div className="h-24 w-full rounded bg-muted" />
+                </div>
+            </div>
+        );
+    }
+
+    if (!post) {
+        return (
+            <div className="mx-auto flex max-w-7xl flex-col items-center px-4 py-32 text-center">
+                <p className="font-display text-2xl text-foreground">Article non trouve</p>
+                <Link to="/blog" className="mt-4 text-sm text-primary hover:underline">
+                    Retour au blog
+                </Link>
+            </div>
+        );
+    }
+
+    const paragraphs = post.content.split("\n\n").filter(Boolean);
+
+    return (
+        <div>
+            <div className="relative h-72 overflow-hidden bg-muted md:h-96">
+                <img
+                    src={post.cover_image}
+                    alt={post.title}
+                    className="h-full w-full object-cover"
+                />
+                <div className="absolute inset-0 bg-black/50" />
+                <div className="absolute inset-0 flex items-end">
+                    <div className="mx-auto w-full max-w-3xl px-4 pb-10 md:px-8">
+                        <span className="rounded-full bg-primary px-3 py-1 text-xs font-medium text-white">
+                            {post.category}
+                        </span>
+                        <h1 className="font-display mt-4 text-3xl font-semibold text-white md:text-4xl">
+                            {post.title}
+                        </h1>
+                    </div>
+                </div>
+            </div>
+
+            <div className="mx-auto max-w-3xl px-4 py-12 md:px-8">
+                <div className="flex items-center gap-6 mb-10 text-sm text-muted-foreground">
+                    <span className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                        {formatDate(post.published_at)}
+                    </span>
+                    <span className="flex items-center gap-2">
+                        <Tag className="h-4 w-4" />
+                        {post.category}
+                    </span>
+                </div>
+
+                <div>
+                    {paragraphs.map((paragraph, index) => (
+                        <p key={index} className="mb-6 text-base leading-relaxed text-foreground/80">
+                            {paragraph}
+                        </p>
+                    ))}
+                </div>
+
+                <div className="mt-12 border-t border-border pt-8">
+                    <Button asChild variant="outline" className="gap-2">
+                        <Link to="/blog">
+                            <ArrowLeft className="h-4 w-4" />
+                            Retour au blog
+                        </Link>
+                    </Button>
+                </div>
+            </div>
+
+            {related.length > 0 && (
+                <section className="bg-muted/40 py-16">
+                    <div className="mx-auto max-w-7xl px-4 md:px-8">
+                        <h2 className="font-display text-2xl font-semibold text-foreground mb-8">
+                            Articles similaires
+                        </h2>
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                            {related.map((rpost) => (
+                                <Link
+                                    key={rpost.id}
+                                    to={"/blog/" + rpost.id}
+                                    className="group flex gap-4 rounded-xl bg-card p-4 shadow-premium transition-shadow hover:shadow-premium-lg"
+                                >
+                                    <div className="h-20 w-28 flex-shrink-0 overflow-hidden rounded-lg bg-muted">
+                                        <img
+                                            src={rpost.cover_image}
+                                            alt={rpost.title}
+                                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                        />
+                                    </div>
+                                    <div>
+                                        <span className="text-xs font-medium text-primary">{rpost.category}</span>
+                                        <h3 className="font-display mt-1 text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+                                            {rpost.title}
+                                        </h3>
+                                        <p className="mt-1 text-xs text-muted-foreground">
+                                            {formatDate(rpost.published_at)}
+                                        </p>
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            )}
+        </div>
+    );
+}
+</file>
+
+<file path="src/pages/Catalogue.tsx">
+import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { PackageX, SlidersHorizontal } from "lucide-react";
+import { useCategories, useProducts } from "@/hooks/useSupabase";
+import { Link } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+
+export default function Catalogue() {
+    const [searchParams, setSearchParams] = useSearchParams();
+    const activeSlug = searchParams.get("category") ?? undefined;
+    const [sort, setSort] = useState<"recent" | "price_asc" | "price_desc">("recent");
+
+    const { categories } = useCategories();
+    const { products, loading } = useProducts(activeSlug);
+
+    const sortedProducts = useMemo(() => {
+        return [...products].sort((a, b) => {
+            if (sort === "price_asc") return a.price - b.price;
+            if (sort === "price_desc") return b.price - a.price;
+            return b.id - a.id;
+        });
+    }, [products, sort]);
+
+    function handleCategoryClick(slug?: string) {
+        if (slug) {
+            setSearchParams({ category: slug });
+        } else {
+            setSearchParams({});
+        }
+    }
+
+    return (
+        <div className="min-h-screen bg-background pb-24">
+            <section className="relative bg-accent/30 py-16 md:py-24 border-b border-border/40">
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background" />
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="relative mx-auto max-w-7xl px-4 text-center md:px-8"
+                >
+                    <h1 className="font-display text-4xl font-bold text-foreground md:text-6xl">
+                        Notre catalogue
+                    </h1>
+                    <p className="mt-4 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                        {sortedProducts.length} piece{sortedProducts.length > 1 ? "s" : ""}
+                    </p>
+                </motion.div>
+            </section>
+
+            <section className="mx-auto max-w-7xl px-4 py-8 md:px-8">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-12">
+                    <div className="flex flex-wrap items-center gap-3">
+                        <button
+                            onClick={() => handleCategoryClick(undefined)}
+                            className={"rounded-full px-5 py-2.5 text-sm font-semibold transition-all duration-300 " + (!activeSlug ? "bg-foreground text-background shadow-md" : "bg-muted/50 text-foreground hover:bg-muted")}
+                        >
+                            Tous
+                        </button>
+                        {categories.map((cat) => (
+                            <button
+                                key={cat.id}
+                                onClick={() => handleCategoryClick(cat.slug)}
+                                className={"rounded-full px-5 py-2.5 text-sm font-semibold transition-all duration-300 " + (activeSlug === cat.slug ? "bg-foreground text-background shadow-md" : "bg-muted/50 text-foreground hover:bg-muted")}
+                            >
+                                {cat.name}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0 bg-muted/30 p-1.5 rounded-2xl border border-border/50">
+                        <div className="pl-3 text-muted-foreground">
+                            <SlidersHorizontal className="h-4 w-4" />
+                        </div>
+                        <Select value={sort} onValueChange={(value) => setSort(value as typeof sort)}>
+                            <SelectTrigger className="w-[180px] border-none bg-transparent shadow-none font-medium">
+                                <SelectValue placeholder="Trier par" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl shadow-premium">
+                                <SelectItem value="recent">Plus recents</SelectItem>
+                                <SelectItem value="price_asc">Prix croissant</SelectItem>
+                                <SelectItem value="price_desc">Prix decroissant</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+
+                {loading ? (
+                    <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+                        {Array.from({ length: 4 }).map((_, i) => (
+                            <div key={i} className="animate-pulse">
+                                <div className="aspect-[4/5] rounded-2xl bg-muted" />
+                                <div className="mt-4 h-4 w-3/4 rounded bg-muted" />
+                                <div className="mt-2 h-4 w-1/2 rounded bg-muted" />
+                            </div>
+                        ))}
+                    </div>
+                ) : sortedProducts.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center gap-4 py-32">
+                        <div className="rounded-full bg-muted/50 p-6 border border-border/50">
+                            <PackageX className="h-10 w-10 text-muted-foreground/50" />
+                        </div>
+                        <p className="text-base font-medium text-muted-foreground">
+                            Aucun produit trouve dans cette categorie.
+                        </p>
+                    </div>
+                ) : (
+                    <motion.div layout className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+                        <AnimatePresence mode="popLayout">
+                            {sortedProducts.map((product) => (
+                                <motion.div
+                                    layout
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.9 }}
+                                    transition={{ duration: 0.4 }}
+                                    key={product.id}
+                                >
+                                    <Link
+                                        to={"/produit/" + product.id}
+                                        className="group block overflow-hidden rounded-2xl bg-card border border-border/40 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:shadow-premium"
+                                    >
+                                        <div className="aspect-[4/5] overflow-hidden bg-muted/30">
+                                            <img
+                                                src={product.image}
+                                                alt={product.name}
+                                                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                            />
+                                        </div>
+                                        <div className="p-5 flex flex-col gap-1">
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                                                {product.categories?.name}
+                                            </span>
+                                            <h3 className="font-display text-lg text-foreground group-hover:text-primary transition-colors">
+                                                {product.name}
+                                            </h3>
+                                            <p className="font-display text-xl text-primary font-medium mt-1">
+                                                {product.price.toLocaleString()} FCFA
+                                            </p>
+                                        </div>
+                                    </Link>
+                                </motion.div>
+                            ))}
+                        </AnimatePresence>
+                    </motion.div>
+                )}
+            </section>
+        </div>
+    );
+}
+</file>
+
+<file path="src/pages/ProductDetail.tsx">
+import { Link, useParams } from "react-router-dom";
+import { ShieldCheck, ShoppingBag, Truck, ChevronLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import WhatsAppButton from "@/components/WhatsAppButton";
+import { useCart } from "@/stores/useCart";
+import { useProduct, useProducts } from "@/hooks/useSupabase";
+import { motion } from "framer-motion";
+
+export default function ProductDetail() {
+    const { id } = useParams<{ id: string }>();
+    const { product, loading } = useProduct(Number(id));
+    const { products: allProducts } = useProducts();
+    const { addItem, setIsOpen } = useCart();
+
+    if (loading) {
+        return (
+            <div className="mx-auto max-w-7xl px-4 py-12 md:px-8">
+                <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
+                    <div className="aspect-[4/5] animate-pulse rounded-3xl bg-muted" />
+                    <div className="flex flex-col gap-4 pt-8">
+                        <div className="h-4 w-1/4 animate-pulse rounded bg-muted" />
+                        <div className="h-10 w-3/4 animate-pulse rounded bg-muted" />
+                        <div className="h-8 w-1/3 animate-pulse rounded bg-muted" />
+                        <div className="h-24 w-full animate-pulse rounded bg-muted" />
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (!product) {
+        return (
+            <div className="mx-auto flex min-h-[60vh] max-w-7xl flex-col items-center justify-center px-4 text-center">
+                <p className="font-display text-3xl font-bold text-foreground">
+                    Produit introuvable
+                </p>
+                <Link
+                    to="/catalogue"
+                    className="mt-6 flex items-center gap-2 text-sm font-semibold text-primary hover:text-foreground transition-colors"
+                >
+                    <ChevronLeft className="h-4 w-4" />
+                    Retour au catalogue
+                </Link>
+            </div>
+        );
+    }
+
+    const relatedProducts = allProducts
+        .filter((p) => p.category_id === product.category_id && p.id !== product.id)
+        .slice(0, 4);
+
+    function handleAddToCart() {
+        addItem({
+            id: product!.id,
+            name: product!.name,
+            price: product!.price,
+            image: product!.image,
+        });
+        setIsOpen(true);
+    }
+
+    return (
+        <div className="min-h-screen bg-background pb-20">
+            <div className="mx-auto max-w-7xl px-4 pt-8 md:px-8">
+                <Link
+                    to="/catalogue"
+                    className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                    <ChevronLeft className="h-4 w-4" />
+                    Retour
+                </Link>
+            </div>
+
+            <section className="mx-auto max-w-7xl px-4 py-8 md:px-8 lg:py-12">
+                <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-20 items-center">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.6 }}
+                        className="aspect-[4/5] overflow-hidden rounded-3xl bg-muted/20 border border-border/40 shadow-sm"
+                    >
+                        <img
+                            src={product.image}
+                            alt={product.name}
+                            className="h-full w-full object-cover transition-transform duration-700 hover:scale-105"
+                        />
+                    </motion.div>
+
+                    <div className="flex flex-col justify-center">
+                        <motion.span
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.4, delay: 0.1 }}
+                            className="text-xs font-bold uppercase tracking-[0.2em] text-primary"
+                        >
+                            {product.categories?.name}
+                        </motion.span>
+
+                        <motion.h1
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.4, delay: 0.2 }}
+                            className="font-display mt-3 text-4xl font-bold leading-tight text-foreground md:text-5xl"
+                        >
+                            {product.name}
+                        </motion.h1>
+
+                        <motion.p
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.4, delay: 0.3 }}
+                            className="font-display mt-6 text-3xl font-medium text-foreground/90"
+                        >
+                            {product.price.toLocaleString()} FCFA
+                        </motion.p>
+
+                        <motion.p
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.4, delay: 0.4 }}
+                            className="mt-8 max-w-lg text-base leading-relaxed text-muted-foreground"
+                        >
+                            {product.description}
+                        </motion.p>
+
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.4, delay: 0.5 }}
+                            className="mt-10 flex flex-col gap-4 sm:flex-row"
+                        >
+                            <WhatsAppButton
+                                product={{
+                                    name: product.name,
+                                    price: product.price,
+                                }}
+                                className="flex-1 rounded-full py-4 text-base"
+                            />
+                            <Button
+                                variant="outline"
+                                size="lg"
+                                className="flex-1 gap-2 rounded-full py-4 text-base"
+                                onClick={handleAddToCart}
+                            >
+                                <ShoppingBag className="h-5 w-5" />
+                                Ajouter au panier
+                            </Button>
+                        </motion.div>
+
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.4, delay: 0.6 }}
+                            className="mt-12 flex flex-col gap-4 rounded-2xl bg-muted/30 p-6 border border-border/40"
+                        >
+                            <div className="flex items-center gap-4 text-sm font-medium text-foreground/80">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                                    <Truck className="h-5 w-5" />
+                                </div>
+                                Livraison rapide disponible
+                            </div>
+                            <div className="flex items-center gap-4 text-sm font-medium text-foreground/80">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                                    <ShieldCheck className="h-5 w-5" />
+                                </div>
+                                Paiement securise a la livraison
+                            </div>
+                        </motion.div>
+                    </div>
+                </div>
+            </section>
+
+            {relatedProducts.length > 0 && (
+                <section className="bg-muted/10 py-24 mt-12 border-t border-border/30">
+                    <div className="mx-auto max-w-7xl px-4 md:px-8">
+                        <h2 className="font-display text-3xl font-bold text-foreground">
+                            Vous aimerez aussi
+                        </h2>
+                        <div className="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+                            {relatedProducts.map((p, index) => (
+                                <motion.div
+                                    key={p.id}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                                >
+                                    <Link
+                                        to={"/produit/" + p.id}
+                                        className="group block overflow-hidden rounded-2xl bg-card border border-border/40 shadow-sm transition-all hover:-translate-y-1 hover:shadow-premium"
+                                    >
+                                        <div className="aspect-[4/5] overflow-hidden bg-muted/30">
+                                            <img src={p.image} alt={p.name} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                        </div>
+                                        <div className="p-5">
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">{p.categories?.name}</span>
+                                            <h3 className="font-display text-lg text-foreground group-hover:text-primary transition-colors">{p.name}</h3>
+                                            <p className="font-display text-xl text-primary font-medium mt-1">{p.price.toLocaleString()} FCFA</p>
+                                        </div>
+                                    </Link>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            )}
+        </div>
+    );
+}
 </file>
 
 </files>
