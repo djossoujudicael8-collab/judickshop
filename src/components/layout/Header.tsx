@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/stores/useCart";
 import { useSiteSettings } from "@/hooks/useSupabase";
+import SearchDialog from "@/components/SearchDialog";
 
 const navLinks = [
     { label: "Accueil", path: "/" },
@@ -14,6 +15,7 @@ const navLinks = [
 
 export default function Header() {
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [searchOpen, setSearchOpen] = useState(false);
     const { totalItems, setIsOpen } = useCart();
     const cartCount = totalItems();
     const { settings } = useSiteSettings();
@@ -54,7 +56,13 @@ export default function Header() {
 
                 {/* Actions à droite */}
                 <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" aria-label="Rechercher" className="hover:bg-foreground/5 rounded-full">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Rechercher"
+                        className="hover:bg-foreground/5 rounded-full"
+                        onClick={() => setSearchOpen(true)}
+                    >
                         <Search className="h-5 w-5" />
                     </Button>
 
@@ -111,6 +119,8 @@ export default function Header() {
                     ))}
                 </nav>
             )}
+
+            <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
         </header>
     );
 }
