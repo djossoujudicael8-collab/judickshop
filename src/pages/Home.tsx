@@ -23,7 +23,7 @@ export default function Home() {
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6 }}
-                    className="relative mx-auto flex max-w-7xl flex-col items-center px-4 py-32 text-center md:px-8 md:py-40"
+                    className="relative mx-auto flex max-w-7xl flex-col items-center px-4 py-12 text-center md:px-8 md:py-16"
                 >
                     <span className="rounded-full border border-primary/30 bg-primary/5 px-5 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-primary">
                         Nouvelle collection
