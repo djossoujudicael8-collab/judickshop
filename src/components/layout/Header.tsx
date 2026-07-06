@@ -22,14 +22,14 @@ export default function Header() {
 
     return (
         <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/60 shadow-sm backdrop-blur-md transition-all">
-            <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:px-8">
+            <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 md:px-8">
                 {/* Logo */}
                 <Link to="/" className="flex items-center gap-2">
                     {settings?.logo_url ? (
                         <img
                             src={settings.logo_url}
                             alt="Logo de la boutique"
-                            className="h-9 w-auto object-contain"
+                            className="h-14 w-auto object-contain"
                         />
                     ) : (
                         <span className="font-display text-xl font-bold tracking-tight text-foreground">

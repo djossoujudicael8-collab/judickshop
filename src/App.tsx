@@ -10,10 +10,12 @@ import AdminLogin from "@/pages/AdminLogin";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminRoute from "@/components/AdminRoute";
 import ToastContainer from "@/components/ui/toast-container";
+import ScrollToTop from "@/components/ScrollToTop";
 
 export default function App() {
   return (
     <>
+      <ScrollToTop />
       <Routes>
         <Route
           path="/"

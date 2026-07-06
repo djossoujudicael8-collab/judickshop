@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import TopBar from "./TopBar";
 import Header from "./Header";
 import Footer from "./Footer";
 import CartDrawer from "@/components/CartDrawer";
@@ -6,6 +7,7 @@ import CartDrawer from "@/components/CartDrawer";
 export default function Layout({ children }: { children: ReactNode }) {
     return (
         <div className="flex min-h-screen flex-col">
+            <TopBar />
             <Header />
             <main className="flex-1">{children}</main>
             <Footer />
