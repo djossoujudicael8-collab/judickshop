@@ -4,6 +4,7 @@ import { Menu, Search, ShoppingBag, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/stores/useCart";
+import { useSiteSettings } from "@/hooks/useSupabase";
 
 const navLinks = [
     { label: "Accueil", path: "/" },
@@ -15,15 +16,24 @@ export default function Header() {
     const [mobileOpen, setMobileOpen] = useState(false);
     const { totalItems, setIsOpen } = useCart();
     const cartCount = totalItems();
+    const { settings } = useSiteSettings();
 
     return (
         <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/60 shadow-sm backdrop-blur-md transition-all">
             <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:px-8">
                 {/* Logo */}
                 <Link to="/" className="flex items-center gap-2">
-                    <span className="font-display text-xl font-bold tracking-tight text-foreground">
-                        JUDICK<span className="text-primary">SHOP</span>
-                    </span>
+                    {settings?.logo_url ? (
+                        <img
+                            src={settings.logo_url}
+                            alt="Logo de la boutique"
+                            className="h-9 w-auto object-contain"
+                        />
+                    ) : (
+                        <span className="font-display text-xl font-bold tracking-tight text-foreground">
+                            JUDICK<span className="text-primary">SHOP</span>
+                        </span>
+                    )}
                 </Link>
 
                 {/* Navigation desktop */}

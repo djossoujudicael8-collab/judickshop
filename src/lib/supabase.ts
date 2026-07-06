@@ -34,3 +34,8 @@ export type BlogPostDB = {
     published_at: string;
     created_at: string;
 };
+
+export type SiteSettingsDB = {
+    id: number;
+    logo_url: string | null;
+};

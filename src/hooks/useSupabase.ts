@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import type { CategoryDB, ProductDB, BlogPostDB } from "@/lib/supabase";
+import type { CategoryDB, ProductDB, BlogPostDB, SiteSettingsDB } from "@/lib/supabase";
 
 /* ------------------------------------------------------------------ */
 /* Hooks de lecture publics (catalogue, blog, fiches produit)         */
@@ -158,6 +158,25 @@ export function useRelatedPosts(excludeId: number) {
     return { posts };
 }
 
+export function useSiteSettings() {
+    const [settings, setSettings] = useState<SiteSettingsDB | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        supabase
+            .from("site_settings")
+            .select("*")
+            .eq("id", 1)
+            .single()
+            .then(({ data }) => {
+                if (data) setSettings(data);
+                setLoading(false);
+            });
+    }, []);
+
+    return { settings, loading };
+}
+
 /* ------------------------------------------------------------------ */
 /* Hooks de lecture pour l'admin (listes completes + refetch manuel)  */
 /* ------------------------------------------------------------------ */
@@ -223,6 +242,28 @@ export function useAdminBlogPosts() {
     }, []);
 
     return { posts, loading, refetch: fetchPosts };
+}
+
+export function useAdminSiteSettings() {
+    const [settings, setSettings] = useState<SiteSettingsDB | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    async function fetchSettings() {
+        setLoading(true);
+        const { data } = await supabase
+            .from("site_settings")
+            .select("*")
+            .eq("id", 1)
+            .single();
+        if (data) setSettings(data);
+        setLoading(false);
+    }
+
+    useEffect(() => {
+        fetchSettings();
+    }, []);
+
+    return { settings, loading, refetch: fetchSettings };
 }
 
 /* ------------------------------------------------------------------ */
@@ -336,4 +377,19 @@ export async function updateBlogPost(id: number, input: BlogPostInput) {
 export async function deleteBlogPost(id: number) {
     const { error } = await supabase.from("blog_posts").delete().eq("id", id);
     if (error) throw error;
+}
+
+/* ------------------------------------------------------------------ */
+/* Fonctions - Parametres du site (logo)                              */
+/* ------------------------------------------------------------------ */
+
+export async function updateSiteSettings(logoUrl: string) {
+    const { data, error } = await supabase
+        .from("site_settings")
+        .update({ logo_url: logoUrl || null })
+        .eq("id", 1)
+        .select()
+        .single();
+    if (error) throw error;
+    return data;
 }

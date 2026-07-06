@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Package, Tag, FileText, Palette, Plus, Pencil, Trash2, LayoutDashboard } from "lucide-react";
+import { LogOut, Package, Tag, FileText, Palette, Plus, Pencil, Trash2, LayoutDashboard, Image as ImageIcon, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,15 +20,18 @@ import {
     useAdminProducts,
     useAdminCategories,
     useAdminBlogPosts,
+    useAdminSiteSettings,
     deleteProduct,
     deleteCategory,
     deleteBlogPost,
+    updateSiteSettings,
 } from "@/hooks/useSupabase";
 import type { ProductDB, CategoryDB, BlogPostDB } from "@/lib/supabase";
 import ProductFormDialog from "@/components/admin/ProductFormDialog";
 import CategoryFormDialog from "@/components/admin/CategoryFormDialog";
 import BlogFormDialog from "@/components/admin/BlogFormDialog";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
+import ImageUploadField from "@/components/admin/ImageUploadField";
 import { motion } from "framer-motion";
 
 export default function AdminDashboard() {
@@ -72,7 +75,7 @@ export default function AdminDashboard() {
                     className="mt-12"
                 >
                     <Tabs defaultValue="products" className="w-full">
-                        <TabsList className="mb-8 p-1 bg-muted/50 rounded-2xl inline-flex shadow-sm border border-border/30">
+                        <TabsList className="mb-8 p-1 bg-muted/50 rounded-2xl inline-flex flex-wrap shadow-sm border border-border/30">
                             <TabsTrigger value="products" className="gap-2 rounded-xl px-6 py-2.5 data-[state=active]:shadow-sm">
                                 <Package className="h-4 w-4" />
                                 Produits
@@ -85,6 +88,10 @@ export default function AdminDashboard() {
                                 <FileText className="h-4 w-4" />
                                 Blog
                             </TabsTrigger>
+                            <TabsTrigger value="logo" className="gap-2 rounded-xl px-6 py-2.5 data-[state=active]:shadow-sm">
+                                <ImageIcon className="h-4 w-4" />
+                                Logo
+                            </TabsTrigger>
                             <TabsTrigger value="theme" className="gap-2 rounded-xl px-6 py-2.5 data-[state=active]:shadow-sm">
                                 <Palette className="h-4 w-4" />
                                 Theme
@@ -94,6 +101,7 @@ export default function AdminDashboard() {
                         <TabsContent value="products"><ProductsTab /></TabsContent>
                         <TabsContent value="categories"><CategoriesTab /></TabsContent>
                         <TabsContent value="blog"><BlogTab /></TabsContent>
+                        <TabsContent value="logo"><LogoTab /></TabsContent>
                         <TabsContent value="theme"><ThemeTab /></TabsContent>
                     </Tabs>
                 </motion.div>
@@ -217,10 +225,7 @@ function ProductsTab() {
                                             <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-muted border border-border/40 shadow-sm">
                                                 <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
                                             </div>
-                                            <div className="flex flex-col">
-                                                <span className="font-bold text-foreground">{product.name}</span>
-                                                <span className="text-xs text-muted-foreground font-medium">Ref: #{product.id}</span>
-                                            </div>
+                                            <span className="font-bold text-foreground">{product.name}</span>
                                         </div>
                                     </TableCell>
                                     <TableCell>
@@ -506,6 +511,79 @@ function BlogTab() {
                 onConfirm={confirmDelete}
                 loading={deleting}
             />
+        </div>
+    );
+}
+
+function LogoTab() {
+    const { settings, loading, refetch } = useAdminSiteSettings();
+    const [logoUrl, setLogoUrl] = useState("");
+    const [saving, setSaving] = useState(false);
+    const { showToast } = useToast();
+
+    useEffect(() => {
+        if (settings) {
+            setLogoUrl(settings.logo_url || "");
+        }
+    }, [settings]);
+
+    async function handleSave() {
+        setSaving(true);
+        try {
+            await updateSiteSettings(logoUrl);
+            showToast("success", "Logo mis a jour avec succes.");
+            refetch();
+        } catch {
+            showToast("error", "Erreur lors de la mise a jour du logo.");
+        } finally {
+            setSaving(false);
+        }
+    }
+
+    function handleRemove() {
+        setLogoUrl("");
+    }
+
+    if (loading) {
+        return (
+            <div className="rounded-3xl bg-card p-8 border border-border/40 shadow-sm max-w-xl">
+                <p className="text-sm text-muted-foreground">Chargement...</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="rounded-3xl bg-card p-8 border border-border/40 shadow-sm max-w-xl">
+            <h3 className="font-display text-2xl font-bold mb-2">Logo de la boutique</h3>
+            <p className="text-sm text-muted-foreground mb-6">
+                Ce logo remplacera le texte "JUDICKSHOP" dans l'en-tete et le pied de page du site.
+                Sans logo, le texte s'affiche automatiquement.
+            </p>
+
+            <ImageUploadField
+                id="logo-upload"
+                label="Logo"
+                value={logoUrl}
+                onChange={setLogoUrl}
+                folder="branding"
+            />
+
+            <div className="mt-6 flex items-center gap-4">
+                <Button onClick={handleSave} disabled={saving} className="gap-2 rounded-xl">
+                    {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {saving ? "Enregistrement..." : "Enregistrer le logo"}
+                </Button>
+
+                {logoUrl && (
+                    <button
+                        type="button"
+                        onClick={handleRemove}
+                        className="text-xs font-semibold text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                        Retirer le logo (revenir au texte)
+                    </button>
+                )}
+            </div>
         </div>
     );
 }
