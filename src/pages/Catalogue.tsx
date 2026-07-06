@@ -50,7 +50,7 @@ export default function Catalogue() {
                         Notre catalogue
                     </h1>
                     <p className="mt-4 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                        {sortedProducts.length} piece{sortedProducts.length > 1 ? "s" : ""}
+                        {sortedProducts.length} article{sortedProducts.length > 1 ? "s" : ""}
                     </p>
                 </motion.div>
             </section>
