@@ -45,7 +45,7 @@ export default function Footer() {
                             Contact
                         </h4>
                         <ul className="mt-4 flex flex-col gap-2 text-sm text-background/70">
-                            <li>Cotonou, Bénin</li>
+                            <li>Parakou, Cotonou, Bénin</li>
                             <li>contact@judickshop.com</li>
                         </ul>
                     </div>
