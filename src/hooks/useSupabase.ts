@@ -380,13 +380,18 @@ export async function deleteBlogPost(id: number) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Fonctions - Parametres du site (logo)                              */
+/* Fonctions - Parametres du site (logo, video de fond)               */
 /* ------------------------------------------------------------------ */
 
-export async function updateSiteSettings(logoUrl: string) {
+export type SiteSettingsInput = {
+    logo_url?: string | null;
+    hero_video_url?: string | null;
+};
+
+export async function updateSiteSettings(input: SiteSettingsInput) {
     const { data, error } = await supabase
         .from("site_settings")
-        .update({ logo_url: logoUrl || null })
+        .update(input)
         .eq("id", 1)
         .select()
         .single();

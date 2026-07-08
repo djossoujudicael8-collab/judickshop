@@ -32,6 +32,7 @@ import CategoryFormDialog from "@/components/admin/CategoryFormDialog";
 import BlogFormDialog from "@/components/admin/BlogFormDialog";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import ImageUploadField from "@/components/admin/ImageUploadField";
+import VideoUploadField from "@/components/admin/VideoUploadField";
 import { motion } from "framer-motion";
 
 export default function AdminDashboard() {
@@ -88,9 +89,9 @@ export default function AdminDashboard() {
                                 <FileText className="h-4 w-4" />
                                 Blog
                             </TabsTrigger>
-                            <TabsTrigger value="logo" className="gap-2 rounded-xl px-6 py-2.5 data-[state=active]:shadow-sm">
+                            <TabsTrigger value="appearance" className="gap-2 rounded-xl px-6 py-2.5 data-[state=active]:shadow-sm">
                                 <ImageIcon className="h-4 w-4" />
-                                Logo
+                                Apparence
                             </TabsTrigger>
                             <TabsTrigger value="theme" className="gap-2 rounded-xl px-6 py-2.5 data-[state=active]:shadow-sm">
                                 <Palette className="h-4 w-4" />
@@ -101,7 +102,7 @@ export default function AdminDashboard() {
                         <TabsContent value="products"><ProductsTab /></TabsContent>
                         <TabsContent value="categories"><CategoriesTab /></TabsContent>
                         <TabsContent value="blog"><BlogTab /></TabsContent>
-                        <TabsContent value="logo"><LogoTab /></TabsContent>
+                        <TabsContent value="appearance"><AppearanceTab /></TabsContent>
                         <TabsContent value="theme"><ThemeTab /></TabsContent>
                     </Tabs>
                 </motion.div>
@@ -515,33 +516,34 @@ function BlogTab() {
     );
 }
 
-function LogoTab() {
+function AppearanceTab() {
     const { settings, loading, refetch } = useAdminSiteSettings();
     const [logoUrl, setLogoUrl] = useState("");
+    const [videoUrl, setVideoUrl] = useState("");
     const [saving, setSaving] = useState(false);
     const { showToast } = useToast();
 
     useEffect(() => {
         if (settings) {
             setLogoUrl(settings.logo_url || "");
+            setVideoUrl(settings.hero_video_url || "");
         }
     }, [settings]);
 
     async function handleSave() {
         setSaving(true);
         try {
-            await updateSiteSettings(logoUrl);
-            showToast("success", "Logo mis a jour avec succes.");
+            await updateSiteSettings({
+                logo_url: logoUrl || null,
+                hero_video_url: videoUrl || null,
+            });
+            showToast("success", "Apparence mise a jour avec succes.");
             refetch();
         } catch {
-            showToast("error", "Erreur lors de la mise a jour du logo.");
+            showToast("error", "Erreur lors de la mise a jour.");
         } finally {
             setSaving(false);
         }
-    }
-
-    function handleRemove() {
-        setLogoUrl("");
     }
 
     if (loading) {
@@ -553,37 +555,43 @@ function LogoTab() {
     }
 
     return (
-        <div className="rounded-3xl bg-card p-8 border border-border/40 shadow-sm max-w-xl">
-            <h3 className="font-display text-2xl font-bold mb-2">Logo de la boutique</h3>
-            <p className="text-sm text-muted-foreground mb-6">
-                Ce logo remplacera le texte "JUDICKSHOP" dans l'en-tete et le pied de page du site.
-                Sans logo, le texte s'affiche automatiquement.
-            </p>
+        <div className="flex flex-col gap-8 max-w-xl">
+            <div className="rounded-3xl bg-card p-8 border border-border/40 shadow-sm">
+                <h3 className="font-display text-2xl font-bold mb-2">Logo de la boutique</h3>
+                <p className="text-sm text-muted-foreground mb-6">
+                    Ce logo remplacera le texte "JUDICKSHOP" dans l'en-tete et le pied de page du site.
+                    Sans logo, le texte s'affiche automatiquement.
+                </p>
 
-            <ImageUploadField
-                id="logo-upload"
-                label="Logo"
-                value={logoUrl}
-                onChange={setLogoUrl}
-                folder="branding"
-            />
-
-            <div className="mt-6 flex items-center gap-4">
-                <Button onClick={handleSave} disabled={saving} className="gap-2 rounded-xl">
-                    {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                    {saving ? "Enregistrement..." : "Enregistrer le logo"}
-                </Button>
-
-                {logoUrl && (
-                    <button
-                        type="button"
-                        onClick={handleRemove}
-                        className="text-xs font-semibold text-muted-foreground hover:text-destructive transition-colors"
-                    >
-                        Retirer le logo (revenir au texte)
-                    </button>
-                )}
+                <ImageUploadField
+                    id="logo-upload"
+                    label="Logo"
+                    value={logoUrl}
+                    onChange={setLogoUrl}
+                    folder="branding"
+                />
             </div>
+
+            <div className="rounded-3xl bg-card p-8 border border-border/40 shadow-sm">
+                <h3 className="font-display text-2xl font-bold mb-2">Video de fond (page d'accueil)</h3>
+                <p className="text-sm text-muted-foreground mb-6">
+                    Cette video s'affichera en arriere-plan de la section principale de la page d'accueil,
+                    en boucle et sans son. Sans video, le fond degrade actuel s'affiche.
+                </p>
+
+                <VideoUploadField
+                    id="hero-video-upload"
+                    label="Video de fond"
+                    value={videoUrl}
+                    onChange={setVideoUrl}
+                    folder="hero"
+                />
+            </div>
+
+            <Button onClick={handleSave} disabled={saving} className="gap-2 rounded-xl h-12 text-base font-bold self-start px-8">
+                {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                {saving ? "Enregistrement..." : "Enregistrer les modifications"}
+            </Button>
         </div>
     );
 }

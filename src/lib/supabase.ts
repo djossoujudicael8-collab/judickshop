@@ -38,4 +38,5 @@ export type BlogPostDB = {
 export type SiteSettingsDB = {
     id: number;
     logo_url: string | null;
+    hero_video_url: string | null;
 };

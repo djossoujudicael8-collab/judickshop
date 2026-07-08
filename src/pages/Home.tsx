@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import WhatsAppButton from "@/components/WhatsAppButton";
-import { useCategories, useProducts, useBlogPosts } from "@/hooks/useSupabase";
+import { useCategories, useProducts, useBlogPosts, useSiteSettings } from "@/hooks/useSupabase";
 import { motion } from "framer-motion";
 
 function formatDate(dateStr: string) {
@@ -14,26 +14,61 @@ export default function Home() {
     const { categories } = useCategories();
     const { products } = useProducts();
     const { posts } = useBlogPosts();
+    const { settings } = useSiteSettings();
+
+    const hasVideo = Boolean(settings?.hero_video_url);
 
     return (
         <div>
-            <section className="relative overflow-hidden bg-accent/30">
-                <div className="absolute inset-0 bg-gradient-to-b from-accent/50 to-transparent" />
+            <section className="relative min-h-[560px] overflow-hidden bg-accent/30 flex items-center">
+                {hasVideo ? (
+                    <>
+                        <video
+                            src={settings!.hero_video_url!}
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            className="absolute inset-0 h-full w-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/55" />
+                    </>
+                ) : (
+                    <div className="absolute inset-0 bg-gradient-to-b from-accent/50 to-transparent" />
+                )}
+
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6 }}
-                    className="relative mx-auto flex max-w-7xl flex-col items-center px-4 py-12 text-center md:px-8 md:py-16"
+                    className="relative mx-auto flex w-full max-w-7xl flex-col items-center px-4 py-12 text-center md:px-8 md:py-16"
                 >
-                    <span className="rounded-full border border-primary/30 bg-primary/5 px-5 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-primary">
+                    <span
+                        className={
+                            "rounded-full border px-5 py-1.5 text-xs font-bold uppercase tracking-[0.2em] " +
+                            (hasVideo
+                                ? "border-white/30 bg-white/10 text-white"
+                                : "border-primary/30 bg-primary/5 text-primary")
+                        }
+                    >
                         Nouvelle collection
                     </span>
-                    <h1 className="font-display mt-8 text-5xl font-bold leading-[1.1] text-foreground md:text-7xl">
+                    <h1
+                        className={
+                            "font-display mt-8 text-5xl font-bold leading-[1.1] md:text-7xl " +
+                            (hasVideo ? "text-white" : "text-foreground")
+                        }
+                    >
                         Des tresors
                         <br />
                         <span className="text-primary italic">pour votre style</span>
                     </h1>
-                    <p className="mt-6 max-w-xl text-base text-muted-foreground md:text-lg">
+                    <p
+                        className={
+                            "mt-6 max-w-xl text-base md:text-lg " +
+                            (hasVideo ? "text-white/85" : "text-muted-foreground")
+                        }
+                    >
                         JUDICKSHOP — Mode, Electronique et Bijoux soigneusement selectionnes pour vous.
                     </p>
                     <div className="mt-10 flex flex-col gap-4 sm:flex-row">
