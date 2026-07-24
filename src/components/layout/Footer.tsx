@@ -16,12 +16,12 @@ export default function Footer() {
                         {settings?.logo_url ? (
                             <img
                                 src={settings.logo_url}
-                                alt="Logo"
+                                alt={settings?.shop_name || "Logo"}
                                 className="h-9 w-auto object-contain"
                             />
                         ) : (
                             <span className="font-display text-xl font-semibold flex items-center gap-1.5">
-                                JA <Sparkles className="h-4 w-4 text-secondary" /> Jí Yoū
+                                {settings?.shop_name || "JA Jí Yoū"} <Sparkles className="h-4 w-4 text-secondary" />
                             </span>
                         )}
                         <p className="mt-3 max-w-sm text-sm text-background/70">
@@ -45,14 +45,22 @@ export default function Footer() {
                             Contact
                         </h4>
                         <ul className="mt-4 flex flex-col gap-2 text-sm text-background/70">
-                            <li>Cotonou, Benin</li>
-                            <li>contact@jayou.com</li>
+                            <li>
+                                <a href="tel:0166990841" className="hover:text-secondary transition-colors">
+                                    01 66 99 08 41
+                                </a>
+                            </li>
+                            <li>
+                                <a href="tel:0168793770" className="hover:text-secondary transition-colors">
+                                    01 68 79 37 70
+                                </a>
+                            </li>
                         </ul>
                     </div>
                 </div>
 
                 <div className="mt-12 border-t border-background/20 pt-6 text-center text-xs text-background/60">
-                    &copy; {new Date().getFullYear()} JA ✨ Jí Yoū. Tous droits reserves.
+                    &copy; {new Date().getFullYear()} {settings?.shop_name || "JA Jí Yoū"}. Tous droits reserves.
                 </div>
             </div>
         </footer>
