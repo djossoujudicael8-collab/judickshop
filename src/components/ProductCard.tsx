@@ -15,8 +15,8 @@ export default function ProductCard({ product }: { product: Product }) {
 
     const outOfStock = product.inStock === false;
 
-    // Le tilt 3D au survol n'a de sens qu'avec une souris : sur mobile on le
-    // desactive completement pour eviter tout calcul inutile a chaque frame.
+    // Le tilt 3D au survol n'a de sens qu'avec une souris : sur mobile/tactile
+    // on le desactive completement pour eviter tout calcul inutile.
     function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
         if (isTouch) return;
         const card = cardRef.current;
@@ -82,16 +82,14 @@ export default function ProductCard({ product }: { product: Product }) {
                         </span>
                     )}
 
-                    {/* Sur tactile, il n'y a pas de "survol" : le bouton reste visible en permanence
-                        pour que l'ajout rapide au panier soit toujours accessible d'un tap. */}
+                    {/* Bouton d'ajout rapide au panier : toujours visible, sur tous les
+                        appareils (la plupart des visiteurs sont sur mobile/Android et
+                        n'ont pas de souris pour declencher un effet "au survol"). */}
                     <motion.button
                         onClick={handleQuickAdd}
                         whileTap={outOfStock ? undefined : { scale: 0.9 }}
                         disabled={outOfStock}
-                        className={
-                            "touch-target absolute bottom-3 right-3 flex h-11 w-11 items-center justify-center rounded-full bg-white/95 text-foreground shadow-md transition-all duration-300 sm:h-10 sm:w-10 sm:translate-y-2 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100 sm:hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 " +
-                            (isTouch && !outOfStock ? "opacity-100 translate-y-0" : "")
-                        }
+                        className="touch-target absolute bottom-3 right-3 flex h-11 w-11 items-center justify-center rounded-full bg-white/95 text-foreground shadow-md transition-all duration-300 hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
                         aria-label="Ajouter au panier"
                     >
                         {added ? (

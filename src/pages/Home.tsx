@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import TrustBadges from "@/components/TrustBadges";
 import SectionDivider from "@/components/SectionDivider";
+import ProductCard from "@/components/ProductCard";
+import CoverCarousel from "@/components/CoverCarousel";
 import { useCategories, useProducts, useFeaturedProducts, useBlogPosts, useSiteSettings } from "@/hooks/useSupabase";
 import { motion } from "framer-motion";
 
@@ -20,15 +22,17 @@ export default function Home() {
     const { settings } = useSiteSettings();
 
     const hasVideo = Boolean(settings?.hero_video_url);
+    const shopName = settings?.shop_name?.trim() || "Notre boutique";
     const selectionProducts = featuredProducts.length > 0 ? featuredProducts : products.slice(0, 8);
 
     return (
         <div className="overflow-x-hidden">
             {/* HERO */}
-            <section className="relative isolate flex min-h-[560px] items-center overflow-hidden bg-background pb-16">
+            <section className="relative isolate flex min-h-[600px] items-center overflow-hidden bg-background pb-16">
                 <div className="blob -left-32 -top-32 h-96 w-96 bg-primary" />
                 <div className="blob -right-20 top-10 h-80 w-80 bg-secondary" style={{ animationDelay: "3s" }} />
                 <div className="blob left-1/3 bottom-0 h-72 w-72 bg-primary/70" style={{ animationDelay: "6s" }} />
+                <div className="grain-overlay" />
 
                 {hasVideo && (
                     <>
@@ -47,29 +51,35 @@ export default function Home() {
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.7 }}
+                    transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
                     className="relative z-10 mx-auto flex w-full max-w-7xl flex-col items-center px-4 py-10 text-center md:px-8 md:py-12"
                 >
-                    <span className="glass flex items-center gap-2 rounded-full px-5 py-2 text-xs font-bold uppercase tracking-[0.2em] text-primary">
+                    <motion.span
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.1, duration: 0.5 }}
+                        className="glass flex items-center gap-2 rounded-full px-5 py-2 text-xs font-bold uppercase tracking-[0.2em] text-primary"
+                    >
                         <Sparkles className="h-3.5 w-3.5" />
-                        Édition exclusive
-                    </span>
+                        Collection signature
+                    </motion.span>
 
                     <h1 className="font-display mt-6 text-4xl font-semibold leading-[1.05] text-foreground sm:text-5xl md:text-7xl">
-                        L'art de sublimer
+                        L'élégance,
                         <br />
-                        <span className="text-gradient italic">votre quotidien</span>
+                        <span className="text-gradient italic">sans compromis</span>
                     </h1>
 
                     <p className="mt-6 max-w-xl text-base text-muted-foreground md:text-lg">
-                        JA ✨ Jí Yoū — des pieces selectionnees avec passion, pensees pour celles et ceux qui aiment se demarquer.
+                        {shopName} vous propose une selection de pieces raffinees, choisies
+                        avec exigence pour celles et ceux qui aiment se distinguer.
                     </p>
 
                     <div className="mt-9 flex flex-col gap-4 sm:flex-row">
                         <Button
                             asChild
                             size="lg"
-                            className="group gap-2 rounded-full bg-gradient-to-r from-primary to-secondary px-8 py-6 text-base text-white shadow-xl glow-primary transition-all duration-300 hover:scale-105 hover:shadow-2xl active:scale-95"
+                            className="magnetic-btn group gap-2 rounded-full bg-gradient-to-r from-primary to-secondary px-8 py-6 text-base text-white shadow-xl glow-primary"
                         >
                             <Link to="/catalogue">
                                 Decouvrir la collection
@@ -87,7 +97,7 @@ export default function Home() {
                 <SectionDivider />
             </div>
 
-            {/* CATEGORIES — carrousel mobile / grille desktop */}
+            {/* CATEGORIES */}
             <section className="pb-20 md:pb-24">
                 <motion.h2
                     initial={{ opacity: 0, y: 20 }}
@@ -110,7 +120,7 @@ export default function Home() {
                         >
                             <Link
                                 to={"/catalogue?category=" + category.slug}
-                                className="group relative block aspect-[4/5] overflow-hidden rounded-[2rem] shadow-md"
+                                className="group relative block aspect-[4/5] overflow-hidden rounded-[2rem] shadow-md transition-shadow duration-500 hover:shadow-premium-xl"
                             >
                                 <img
                                     src={category.image}
@@ -134,7 +144,7 @@ export default function Home() {
 
             <SectionDivider flip />
 
-            {/* LA SELECTION — carrousel mobile / grille desktop */}
+            {/* LA SELECTION — effet Cover Flow */}
             <section className="relative overflow-hidden bg-accent/40 py-20 md:py-24">
                 <div className="blob left-10 top-0 h-72 w-72 bg-secondary/60" />
                 <div className="relative mx-auto max-w-7xl">
@@ -150,42 +160,26 @@ export default function Home() {
                         </Link>
                     </div>
 
-                    <div className="no-scrollbar flex snap-x snap-mandatory gap-6 overflow-x-auto px-4 pb-2 md:grid md:grid-cols-4 md:overflow-visible md:px-8">
-                        {selectionProducts.map((product, index) => (
-                            <motion.div
-                                key={product.id}
-                                initial={{ opacity: 0, y: 30 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.5, delay: index * 0.08 }}
-                                className="w-[62vw] shrink-0 snap-start md:w-auto"
-                            >
-                                <Link
-                                    to={"/produit/" + product.id}
-                                    className="group block overflow-hidden rounded-3xl glass shadow-sm transition-all duration-500 hover:-translate-y-2 hover:glow-primary"
-                                >
-                                    <div className="aspect-[4/5] overflow-hidden bg-muted/30">
-                                        <img
-                                            src={product.image}
-                                            alt={product.name}
-                                            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                        />
-                                    </div>
-                                    <div className="p-5 flex flex-col gap-1">
-                                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary/70">
-                                            {product.categories?.name}
-                                        </span>
-                                        <h3 className="font-display text-lg text-foreground group-hover:text-primary transition-colors">
-                                            {product.name}
-                                        </h3>
-                                        <p className="font-display text-xl font-semibold text-gradient mt-1">
-                                            {product.price.toLocaleString()} FCFA
-                                        </p>
-                                    </div>
-                                </Link>
-                            </motion.div>
-                        ))}
-                    </div>
+                    {selectionProducts.length > 0 && (
+                        <CoverCarousel>
+                            {selectionProducts.map((product) => (
+                                <ProductCard
+                                    key={product.id}
+                                    product={{
+                                        id: product.id,
+                                        name: product.name,
+                                        description: product.description,
+                                        price: product.price,
+                                        image: product.image,
+                                        categoryId: product.category_id,
+                                        categoryName: product.categories?.name ?? "",
+                                        sku: "",
+                                        inStock: product.in_stock,
+                                    }}
+                                />
+                            ))}
+                        </CoverCarousel>
+                    )}
                 </div>
             </section>
 
@@ -209,7 +203,7 @@ export default function Home() {
                         <Link
                             key={post.id}
                             to={"/blog/" + post.id}
-                            className="w-[75vw] shrink-0 snap-start overflow-hidden rounded-3xl glass shadow-sm transition-shadow hover:shadow-premium-lg md:w-auto"
+                            className="group w-[75vw] shrink-0 snap-start overflow-hidden rounded-3xl glass shadow-sm transition-shadow hover:shadow-premium-lg md:w-auto"
                         >
                             <div className="aspect-video overflow-hidden bg-muted">
                                 <img
@@ -242,7 +236,7 @@ export default function Home() {
                         Notre equipe vous repond directement sur WhatsApp.
                     </p>
                     <div className="mt-8 flex justify-center">
-                        <WhatsAppButton className="rounded-full px-8 py-4 text-base transition-transform duration-300 hover:scale-105" />
+                        <WhatsAppButton className="magnetic-btn rounded-full px-8 py-4 text-base" />
                     </div>
                 </div>
             </section>
