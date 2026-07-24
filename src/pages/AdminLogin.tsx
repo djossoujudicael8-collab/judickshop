@@ -102,7 +102,7 @@ export default function AdminLogin() {
                 </form>
 
                 <p className="mt-6 text-center text-xs text-muted-foreground">
-                    Demo : admin@jayou.com / admin123
+                    Demo : admin@judickshop.com / admin123
                 </p>
             </div>
         </div>
