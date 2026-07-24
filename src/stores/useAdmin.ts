@@ -7,8 +7,8 @@ interface AdminState {
     logout: () => void;
 }
 
-const ADMIN_EMAIL = "Suislameilleure@julesther";
-const ADMIN_PASSWORD = "Justeria";
+const ADMIN_EMAIL = "admin@judickshop.com";
+const ADMIN_PASSWORD = "admin123";
 
 export const useAdmin = create<AdminState>()(
     persist(
