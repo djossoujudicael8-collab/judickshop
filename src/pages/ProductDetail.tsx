@@ -1,5 +1,5 @@
 import { Link, useParams } from "react-router-dom";
-import { ShieldCheck, ShoppingBag, Truck, ChevronLeft } from "lucide-react";
+import { ShieldCheck, ShoppingBag, Truck, ChevronLeft, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { useCart } from "@/stores/useCart";
@@ -16,7 +16,7 @@ export default function ProductDetail() {
         return (
             <div className="mx-auto max-w-7xl px-4 py-12 md:px-8">
                 <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
-                    <div className="aspect-[4/5] animate-pulse rounded-3xl bg-muted" />
+                    <div className="aspect-[4/5] animate-pulse rounded-[2rem] bg-muted" />
                     <div className="flex flex-col gap-4 pt-8">
                         <div className="h-4 w-1/4 animate-pulse rounded bg-muted" />
                         <div className="h-10 w-3/4 animate-pulse rounded bg-muted" />
@@ -36,7 +36,7 @@ export default function ProductDetail() {
                 </p>
                 <Link
                     to="/catalogue"
-                    className="mt-6 flex items-center gap-2 text-sm font-semibold text-primary hover:text-foreground transition-colors"
+                    className="mt-6 flex items-center gap-2 text-sm font-semibold text-primary hover:text-secondary transition-colors"
                 >
                     <ChevronLeft className="h-4 w-4" />
                     Retour au catalogue
@@ -60,24 +60,27 @@ export default function ProductDetail() {
     }
 
     return (
-        <div className="min-h-screen bg-background pb-20">
-            <div className="mx-auto max-w-7xl px-4 pt-8 md:px-8">
+        <div className="relative min-h-screen overflow-hidden bg-background pb-20">
+            <div className="blob -right-32 top-0 h-96 w-96 bg-primary/60" />
+            <div className="blob left-0 top-96 h-72 w-72 bg-secondary/50" style={{ animationDelay: "5s" }} />
+
+            <div className="relative z-10 mx-auto max-w-7xl px-4 pt-8 md:px-8">
                 <Link
                     to="/catalogue"
-                    className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                    className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
                 >
                     <ChevronLeft className="h-4 w-4" />
                     Retour
                 </Link>
             </div>
 
-            <section className="mx-auto max-w-7xl px-4 py-8 md:px-8 lg:py-12">
+            <section className="relative z-10 mx-auto max-w-7xl px-4 py-8 md:px-8 lg:py-12">
                 <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-20 items-center">
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.6 }}
-                        className="aspect-[4/5] overflow-hidden rounded-3xl bg-muted/20 border border-border/40 shadow-sm"
+                        className="aspect-[4/5] overflow-hidden rounded-[2rem] glass shadow-sm"
                     >
                         <img
                             src={product.image}
@@ -91,8 +94,9 @@ export default function ProductDetail() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.4, delay: 0.1 }}
-                            className="text-xs font-bold uppercase tracking-[0.2em] text-primary"
+                            className="glass inline-flex w-fit items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-primary"
                         >
+                            <Sparkles className="h-3 w-3" />
                             {product.categories?.name}
                         </motion.span>
 
@@ -100,7 +104,7 @@ export default function ProductDetail() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.4, delay: 0.2 }}
-                            className="font-display mt-3 text-4xl font-bold leading-tight text-foreground md:text-5xl"
+                            className="font-display mt-4 text-4xl font-semibold leading-tight text-foreground md:text-5xl"
                         >
                             {product.name}
                         </motion.h1>
@@ -109,7 +113,7 @@ export default function ProductDetail() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.4, delay: 0.3 }}
-                            className="font-display mt-6 text-3xl font-medium text-foreground/90"
+                            className="font-display text-gradient mt-6 text-3xl font-semibold"
                         >
                             {product.price.toLocaleString()} FCFA
                         </motion.p>
@@ -139,7 +143,7 @@ export default function ProductDetail() {
                             <Button
                                 variant="outline"
                                 size="lg"
-                                className="flex-1 gap-2 rounded-full py-4 text-base"
+                                className="flex-1 gap-2 rounded-full py-4 text-base glass border-primary/30 hover:bg-primary/10"
                                 onClick={handleAddToCart}
                             >
                                 <ShoppingBag className="h-5 w-5" />
@@ -151,16 +155,16 @@ export default function ProductDetail() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.4, delay: 0.6 }}
-                            className="mt-12 flex flex-col gap-4 rounded-2xl bg-muted/30 p-6 border border-border/40"
+                            className="mt-12 flex flex-col gap-4 rounded-3xl glass p-6"
                         >
                             <div className="flex items-center gap-4 text-sm font-medium text-foreground/80">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-secondary text-white">
                                     <Truck className="h-5 w-5" />
                                 </div>
                                 Livraison rapide disponible
                             </div>
                             <div className="flex items-center gap-4 text-sm font-medium text-foreground/80">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-secondary text-white">
                                     <ShieldCheck className="h-5 w-5" />
                                 </div>
                                 Paiement securise a la livraison
@@ -171,10 +175,10 @@ export default function ProductDetail() {
             </section>
 
             {relatedProducts.length > 0 && (
-                <section className="bg-muted/10 py-24 mt-12 border-t border-border/30">
+                <section className="relative z-10 py-24 mt-12 border-t border-white/30">
                     <div className="mx-auto max-w-7xl px-4 md:px-8">
-                        <h2 className="font-display text-3xl font-bold text-foreground">
-                            Vous aimerez aussi
+                        <h2 className="font-display text-3xl font-semibold text-foreground">
+                            Vous aimerez <span className="text-gradient italic">aussi</span>
                         </h2>
                         <div className="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
                             {relatedProducts.map((p, index) => (
@@ -187,15 +191,15 @@ export default function ProductDetail() {
                                 >
                                     <Link
                                         to={"/produit/" + p.id}
-                                        className="group block overflow-hidden rounded-2xl bg-card border border-border/40 shadow-sm transition-all hover:-translate-y-1 hover:shadow-premium"
+                                        className="group block overflow-hidden rounded-3xl glass shadow-sm transition-all hover:-translate-y-2 hover:glow-primary"
                                     >
                                         <div className="aspect-[4/5] overflow-hidden bg-muted/30">
                                             <img src={p.image} alt={p.name} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" />
                                         </div>
                                         <div className="p-5">
-                                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">{p.categories?.name}</span>
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary/70">{p.categories?.name}</span>
                                             <h3 className="font-display text-lg text-foreground group-hover:text-primary transition-colors">{p.name}</h3>
-                                            <p className="font-display text-xl text-primary font-medium mt-1">{p.price.toLocaleString()} FCFA</p>
+                                            <p className="font-display text-xl text-gradient font-semibold mt-1">{p.price.toLocaleString()} FCFA</p>
                                         </div>
                                     </Link>
                                 </motion.div>

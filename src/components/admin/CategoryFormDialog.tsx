@@ -112,41 +112,43 @@ export default function CategoryFormDialog({
                     </DialogTitle>
                 </DialogHeader>
 
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                    <div className="flex flex-col gap-2">
-                        <Label htmlFor="cat-name">Nom</Label>
-                        <Input
-                            id="cat-name"
-                            value={form.name}
-                            onChange={(e) => handleNameChange(e.target.value)}
-                            placeholder="Mode"
-                            required
+                <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+                    <div className="flex flex-1 flex-col gap-4 overflow-y-auto pr-1 -mr-1">
+                        <div className="flex flex-col gap-2">
+                            <Label htmlFor="cat-name">Nom</Label>
+                            <Input
+                                id="cat-name"
+                                value={form.name}
+                                onChange={(e) => handleNameChange(e.target.value)}
+                                placeholder="Mode"
+                                required
+                            />
+                        </div>
+
+                        <div className="flex flex-col gap-2">
+                            <Label htmlFor="cat-slug">Slug (URL)</Label>
+                            <Input
+                                id="cat-slug"
+                                value={form.slug}
+                                onChange={(e) => {
+                                    setSlugTouched(true);
+                                    setForm({ ...form, slug: e.target.value });
+                                }}
+                                placeholder="mode"
+                                required
+                            />
+                        </div>
+
+                        <ImageUploadField
+                            id="category-image-upload"
+                            label="Image de la categorie"
+                            value={form.image}
+                            onChange={(url) => setForm({ ...form, image: url })}
+                            folder="categories"
                         />
                     </div>
 
-                    <div className="flex flex-col gap-2">
-                        <Label htmlFor="cat-slug">Slug (URL)</Label>
-                        <Input
-                            id="cat-slug"
-                            value={form.slug}
-                            onChange={(e) => {
-                                setSlugTouched(true);
-                                setForm({ ...form, slug: e.target.value });
-                            }}
-                            placeholder="mode"
-                            required
-                        />
-                    </div>
-
-                    <ImageUploadField
-                        id="category-image-upload"
-                        label="Image de la categorie"
-                        value={form.image}
-                        onChange={(url) => setForm({ ...form, image: url })}
-                        folder="categories"
-                    />
-
-                    <DialogFooter className="mt-2">
+                    <DialogFooter className="mt-4">
                         <Button
                             type="button"
                             variant="outline"

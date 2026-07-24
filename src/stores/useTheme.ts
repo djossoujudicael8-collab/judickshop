@@ -13,8 +13,8 @@ interface ThemeState {
 }
 
 const DEFAULT_COLORS: ThemeColors = {
-    primary: "24 95% 53%",
-    secondary: "142 71% 35%",
+    primary: "258 90% 66%",
+    secondary: "24 95% 53%",
 };
 
 export const useTheme = create<ThemeState>()(
@@ -35,7 +35,7 @@ export const useTheme = create<ThemeState>()(
             },
         }),
         {
-            name: "judickshop-theme",
+            name: "jayou-theme",
         }
     )
 );

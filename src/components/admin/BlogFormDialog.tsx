@@ -106,72 +106,74 @@ export default function BlogFormDialog({
                     </DialogTitle>
                 </DialogHeader>
 
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4 max-h-[70vh] overflow-y-auto pr-1">
-                    <div className="flex flex-col gap-2">
-                        <Label htmlFor="post-title">Titre</Label>
-                        <Input
-                            id="post-title"
-                            value={form.title}
-                            onChange={(e) => setForm({ ...form, title: e.target.value })}
-                            placeholder="Comment choisir votre style"
-                            required
-                        />
-                    </div>
-
-                    <div className="flex flex-col gap-2">
-                        <Label htmlFor="post-excerpt">Extrait</Label>
-                        <Textarea
-                            id="post-excerpt"
-                            value={form.excerpt}
-                            onChange={(e) => setForm({ ...form, excerpt: e.target.value })}
-                            placeholder="Court resume affiche sur la liste des articles"
-                            rows={2}
-                        />
-                    </div>
-
-                    <div className="flex flex-col gap-2">
-                        <Label htmlFor="post-content">Contenu</Label>
-                        <Textarea
-                            id="post-content"
-                            value={form.content}
-                            onChange={(e) => setForm({ ...form, content: e.target.value })}
-                            placeholder="Contenu complet de l'article"
-                            rows={8}
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
+                <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+                    <div className="flex flex-1 flex-col gap-4 overflow-y-auto pr-1 -mr-1">
                         <div className="flex flex-col gap-2">
-                            <Label htmlFor="post-category">Categorie</Label>
+                            <Label htmlFor="post-title">Titre</Label>
                             <Input
-                                id="post-category"
-                                value={form.category}
-                                onChange={(e) => setForm({ ...form, category: e.target.value })}
-                                placeholder="Style"
+                                id="post-title"
+                                value={form.title}
+                                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                                placeholder="Comment choisir votre style"
                                 required
                             />
                         </div>
 
                         <div className="flex flex-col gap-2">
-                            <Label htmlFor="post-date">Date de publication</Label>
-                            <Input
-                                id="post-date"
-                                type="date"
-                                value={form.published_at}
-                                onChange={(e) => setForm({ ...form, published_at: e.target.value })}
+                            <Label htmlFor="post-excerpt">Extrait</Label>
+                            <Textarea
+                                id="post-excerpt"
+                                value={form.excerpt}
+                                onChange={(e) => setForm({ ...form, excerpt: e.target.value })}
+                                placeholder="Court resume affiche sur la liste des articles"
+                                rows={2}
                             />
                         </div>
+
+                        <div className="flex flex-col gap-2">
+                            <Label htmlFor="post-content">Contenu</Label>
+                            <Textarea
+                                id="post-content"
+                                value={form.content}
+                                onChange={(e) => setForm({ ...form, content: e.target.value })}
+                                placeholder="Contenu complet de l'article"
+                                rows={8}
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div className="flex flex-col gap-2">
+                                <Label htmlFor="post-category">Categorie</Label>
+                                <Input
+                                    id="post-category"
+                                    value={form.category}
+                                    onChange={(e) => setForm({ ...form, category: e.target.value })}
+                                    placeholder="Style"
+                                    required
+                                />
+                            </div>
+
+                            <div className="flex flex-col gap-2">
+                                <Label htmlFor="post-date">Date de publication</Label>
+                                <Input
+                                    id="post-date"
+                                    type="date"
+                                    value={form.published_at}
+                                    onChange={(e) => setForm({ ...form, published_at: e.target.value })}
+                                />
+                            </div>
+                        </div>
+
+                        <ImageUploadField
+                            id="blog-cover-image-upload"
+                            label="Image de couverture"
+                            value={form.cover_image}
+                            onChange={(url) => setForm({ ...form, cover_image: url })}
+                            folder="blog"
+                        />
                     </div>
 
-                    <ImageUploadField
-                        id="blog-cover-image-upload"
-                        label="Image de couverture"
-                        value={form.cover_image}
-                        onChange={(url) => setForm({ ...form, cover_image: url })}
-                        folder="blog"
-                    />
-
-                    <DialogFooter className="mt-2">
+                    <DialogFooter className="mt-4">
                         <Button
                             type="button"
                             variant="outline"

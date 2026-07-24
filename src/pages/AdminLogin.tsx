@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,11 +32,14 @@ export default function AdminLogin() {
     }
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-accent px-4">
-            <div className="w-full max-w-md rounded-2xl bg-background p-8 shadow-premium-lg">
+        <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4">
+            <div className="blob -left-32 -top-32 h-96 w-96 bg-primary/60" />
+            <div className="blob -right-32 bottom-0 h-96 w-96 bg-secondary/60" style={{ animationDelay: "3s" }} />
+
+            <div className="relative z-10 w-full max-w-md rounded-[2rem] glass p-8 shadow-premium-lg">
                 <div className="mb-8 text-center">
-                    <span className="font-display text-2xl font-semibold">
-                        JUDICK<span className="text-primary">SHOP</span>
+                    <span className="font-display text-2xl font-semibold flex items-center justify-center gap-1.5">
+                        JA <Sparkles className="h-4 w-4 text-secondary" /> Jí Yoū
                     </span>
                     <p className="mt-2 text-sm text-muted-foreground">
                         Espace administrateur
@@ -49,7 +52,7 @@ export default function AdminLogin() {
                         <Input
                             id="email"
                             type="email"
-                            placeholder="admin@judickshop.com"
+                            placeholder="admin@jayou.com"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
@@ -88,14 +91,18 @@ export default function AdminLogin() {
                         </p>
                     )}
 
-                    <Button type="submit" disabled={loading} className="gap-2">
+                    <Button
+                        type="submit"
+                        disabled={loading}
+                        className="gap-2 rounded-full bg-gradient-to-r from-primary to-secondary text-white hover:opacity-90"
+                    >
                         {loading && <Loader2 className="h-4 w-4 animate-spin" />}
                         {loading ? "Connexion..." : "Se connecter"}
                     </Button>
                 </form>
 
                 <p className="mt-6 text-center text-xs text-muted-foreground">
-                    Demo : admin@judickshop.com / admin123
+                    Demo : admin@jayou.com / admin123
                 </p>
             </div>
         </div>

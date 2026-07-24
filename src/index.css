@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;1,500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,400..600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,64 +6,61 @@
 
 @layer base {
   :root {
-    /* ===== Thème par défaut : Orange / Vert / Blanc ===== */
-    /* Format HSL "Teinte Saturation% Luminosité%" — sans hsl(), Tailwind l'ajoute */
-
     --background: 0 0% 100%;
-    --foreground: 20 14% 12%;
+    --foreground: 258 25% 14%;
 
     --card: 0 0% 100%;
-    --card-foreground: 20 14% 12%;
+    --card-foreground: 258 25% 14%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 20 14% 12%;
+    --popover-foreground: 258 25% 14%;
 
-    /* Orange premium (couleur d'action principale) */
-    --primary: 24 95% 53%;
+    /* Violet premium */
+    --primary: 258 90% 66%;
     --primary-foreground: 0 0% 100%;
 
-    /* Vert (validation, succès, accents) */
-    --secondary: 142 71% 35%;
+    /* Orange vibrant */
+    --secondary: 24 95% 53%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 30 20% 96%;
-    --muted-foreground: 20 8% 46%;
+    --muted: 258 30% 97%;
+    --muted-foreground: 258 10% 46%;
 
-    --accent: 30 30% 95%;
-    --accent-foreground: 20 14% 12%;
+    --accent: 258 40% 96%;
+    --accent-foreground: 258 25% 14%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
     --success: 142 71% 35%;
 
-    --border: 30 15% 89%;
-    --input: 30 15% 89%;
-    --ring: 24 95% 53%;
+    --border: 258 20% 91%;
+    --input: 258 20% 91%;
+    --ring: 258 90% 66%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
   }
 
   .dark {
-    --background: 20 14% 8%;
-    --foreground: 30 20% 96%;
-    --card: 20 14% 11%;
-    --card-foreground: 30 20% 96%;
-    --popover: 20 14% 11%;
-    --popover-foreground: 30 20% 96%;
-    --primary: 24 95% 58%;
-    --primary-foreground: 20 14% 8%;
-    --secondary: 142 65% 42%;
-    --secondary-foreground: 20 14% 8%;
-    --muted: 20 10% 18%;
-    --muted-foreground: 30 10% 65%;
-    --accent: 20 10% 18%;
-    --accent-foreground: 30 20% 96%;
+    --background: 258 30% 7%;
+    --foreground: 258 20% 96%;
+    --card: 258 25% 10%;
+    --card-foreground: 258 20% 96%;
+    --popover: 258 25% 10%;
+    --popover-foreground: 258 20% 96%;
+    --primary: 258 90% 70%;
+    --primary-foreground: 258 30% 7%;
+    --secondary: 24 95% 58%;
+    --secondary-foreground: 258 30% 7%;
+    --muted: 258 20% 16%;
+    --muted-foreground: 258 10% 65%;
+    --accent: 258 20% 16%;
+    --accent-foreground: 258 20% 96%;
     --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 100%;
-    --border: 20 10% 20%;
-    --input: 20 10% 20%;
-    --ring: 24 95% 58%;
+    --border: 258 20% 18%;
+    --input: 258 20% 18%;
+    --ring: 258 90% 70%;
   }
 
   * {
@@ -89,6 +86,80 @@
 
 @layer utilities {
   .font-display {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Fraunces', serif;
+  }
+
+  .text-gradient {
+    background-image: linear-gradient(120deg, hsl(var(--primary)), hsl(var(--secondary)));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .glass {
+    background: hsl(0 0% 100% / 0.55);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    border: 1px solid hsl(0 0% 100% / 0.4);
+  }
+
+  .glass-dark {
+    background: hsl(258 30% 10% / 0.45);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    border: 1px solid hsl(0 0% 100% / 0.12);
+  }
+
+  .glow-primary {
+    box-shadow: 0 8px 40px -8px hsl(var(--primary) / 0.55);
+  }
+
+  .glow-secondary {
+    box-shadow: 0 8px 40px -8px hsl(var(--secondary) / 0.55);
+  }
+
+  .blob {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(60px);
+    opacity: 0.55;
+    animation: blob-float 14s ease-in-out infinite;
+    pointer-events: none;
+  }
+}
+
+@keyframes blob-float {
+
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  33% {
+    transform: translate(30px, -40px) scale(1.1);
+  }
+
+  66% {
+    transform: translate(-25px, 25px) scale(0.95);
+  }
+}
+
+@keyframes gradient-move {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  100% {
+    background-position: 200% 50%;
+  }
+}
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }

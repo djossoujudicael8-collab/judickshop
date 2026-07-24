@@ -108,70 +108,73 @@ export default function ProductFormDialog({
                     </DialogTitle>
                 </DialogHeader>
 
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4 max-h-[70vh] overflow-y-auto pr-1">
-                    <div className="flex flex-col gap-2">
-                        <Label htmlFor="name">Nom du produit</Label>
-                        <Input
-                            id="name"
-                            value={form.name}
-                            onChange={(e) => setForm({ ...form, name: e.target.value })}
-                            placeholder="Blazer Premium Lin"
-                            required
+                <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+                    <div className="flex flex-1 flex-col gap-4 overflow-y-auto pr-1 -mr-1">
+                        <div className="flex flex-col gap-2">
+                            <Label htmlFor="name">Nom du produit</Label>
+                            <Input
+                                id="name"
+                                value={form.name}
+                                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                                placeholder="Blazer Premium Lin"
+                                required
+                            />
+                        </div>
+
+                        <div className="flex flex-col gap-2">
+                            <Label htmlFor="description">Description</Label>
+                            <Textarea
+                                id="description"
+                                value={form.description}
+                                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                                placeholder="Description detaillee du produit"
+                                rows={4}
+                            />
+                        </div>
+
+                        <div className="flex flex-col gap-2">
+                            <Label htmlFor="price">Prix (FCFA)</Label>
+                            <Input
+                                id="price"
+                                type="number"
+                                min="0"
+                                inputMode="numeric"
+                                value={form.price}
+                                onChange={(e) => setForm({ ...form, price: e.target.value })}
+                                placeholder="45000"
+                                required
+                            />
+                        </div>
+
+                        <div className="flex flex-col gap-2">
+                            <Label>Categorie</Label>
+                            <Select
+                                value={form.category_id}
+                                onValueChange={(value) => setForm({ ...form, category_id: value })}
+                            >
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Choisir une categorie" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {categories.map((cat) => (
+                                        <SelectItem key={cat.id} value={String(cat.id)}>
+                                            {cat.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <ImageUploadField
+                            id="product-image-upload"
+                            label="Image du produit"
+                            value={form.image}
+                            onChange={(url) => setForm({ ...form, image: url })}
+                            folder="products"
                         />
                     </div>
 
-                    <div className="flex flex-col gap-2">
-                        <Label htmlFor="description">Description</Label>
-                        <Textarea
-                            id="description"
-                            value={form.description}
-                            onChange={(e) => setForm({ ...form, description: e.target.value })}
-                            placeholder="Description detaillee du produit"
-                            rows={4}
-                        />
-                    </div>
-
-                    <div className="flex flex-col gap-2">
-                        <Label htmlFor="price">Prix (FCFA)</Label>
-                        <Input
-                            id="price"
-                            type="number"
-                            min="0"
-                            value={form.price}
-                            onChange={(e) => setForm({ ...form, price: e.target.value })}
-                            placeholder="45000"
-                            required
-                        />
-                    </div>
-
-                    <div className="flex flex-col gap-2">
-                        <Label>Categorie</Label>
-                        <Select
-                            value={form.category_id}
-                            onValueChange={(value) => setForm({ ...form, category_id: value })}
-                        >
-                            <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Choisir une categorie" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {categories.map((cat) => (
-                                    <SelectItem key={cat.id} value={String(cat.id)}>
-                                        {cat.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    <ImageUploadField
-                        id="product-image-upload"
-                        label="Image du produit"
-                        value={form.image}
-                        onChange={(url) => setForm({ ...form, image: url })}
-                        folder="products"
-                    />
-
-                    <DialogFooter className="mt-2">
+                    <DialogFooter className="mt-4">
                         <Button
                             type="button"
                             variant="outline"

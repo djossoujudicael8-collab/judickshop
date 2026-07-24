@@ -67,6 +67,25 @@ export function useProducts(categorySlug?: string, search?: string) {
     return { products, loading };
 }
 
+export function useFeaturedProducts() {
+    const [products, setProducts] = useState<ProductDB[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        supabase
+            .from("products")
+            .select("*, categories(name, slug)")
+            .eq("featured", true)
+            .order("created_at", { ascending: false })
+            .then(({ data }) => {
+                if (data) setProducts(data);
+                setLoading(false);
+            });
+    }, []);
+
+    return { products, loading };
+}
+
 export function useProduct(id: number) {
     const [product, setProduct] = useState<ProductDB | null>(null);
     const [loading, setLoading] = useState(true);
@@ -312,6 +331,7 @@ export type ProductInput = {
     price: number;
     category_id: number;
     image: string;
+    featured?: boolean;
 };
 
 export async function createProduct(input: ProductInput) {
@@ -338,6 +358,17 @@ export async function updateProduct(id: number, input: ProductInput) {
 export async function deleteProduct(id: number) {
     const { error } = await supabase.from("products").delete().eq("id", id);
     if (error) throw error;
+}
+
+export async function toggleFeatured(product: ProductDB) {
+    const { data, error } = await supabase
+        .from("products")
+        .update({ featured: !product.featured })
+        .eq("id", product.id)
+        .select()
+        .single();
+    if (error) throw error;
+    return data;
 }
 
 /* ------------------------------------------------------------------ */

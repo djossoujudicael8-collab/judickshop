@@ -37,17 +37,22 @@ export default function Catalogue() {
     }
 
     return (
-        <div className="min-h-screen bg-background pb-24">
-            <section className="relative bg-accent/30 py-16 md:py-24 border-b border-border/40">
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background" />
+        <div className="relative min-h-screen overflow-hidden bg-background pb-24">
+            <div className="blob -right-40 top-0 h-96 w-96 bg-primary/70" />
+            <div className="blob -left-32 top-64 h-72 w-72 bg-secondary/60" style={{ animationDelay: "4s" }} />
+
+            <section className="relative py-16 md:py-24 border-b border-white/30">
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
-                    className="relative mx-auto max-w-7xl px-4 text-center md:px-8"
+                    className="relative z-10 mx-auto max-w-7xl px-4 text-center md:px-8"
                 >
-                    <h1 className="font-display text-4xl font-bold text-foreground md:text-6xl">
-                        Notre catalogue
+                    <span className="glass inline-block rounded-full px-5 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-primary">
+                        La collection complete
+                    </span>
+                    <h1 className="font-display mt-6 text-4xl font-semibold text-foreground md:text-6xl">
+                        Notre <span className="text-gradient italic">catalogue</span>
                     </h1>
                     <p className="mt-4 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
                         {sortedProducts.length} article{sortedProducts.length > 1 ? "s" : ""}
@@ -55,12 +60,17 @@ export default function Catalogue() {
                 </motion.div>
             </section>
 
-            <section className="mx-auto max-w-7xl px-4 py-8 md:px-8">
+            <section className="relative z-10 mx-auto max-w-7xl px-4 py-8 md:px-8">
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-12">
                     <div className="flex flex-wrap items-center gap-3">
                         <button
                             onClick={() => handleCategoryClick(undefined)}
-                            className={"rounded-full px-5 py-2.5 text-sm font-semibold transition-all duration-300 " + (!activeSlug ? "bg-foreground text-background shadow-md" : "bg-muted/50 text-foreground hover:bg-muted")}
+                            className={
+                                "rounded-full px-5 py-2.5 text-sm font-semibold transition-all duration-300 " +
+                                (!activeSlug
+                                    ? "bg-gradient-to-r from-primary to-secondary text-white shadow-md glow-primary"
+                                    : "glass text-foreground hover:bg-primary/10")
+                            }
                         >
                             Tous
                         </button>
@@ -68,15 +78,20 @@ export default function Catalogue() {
                             <button
                                 key={cat.id}
                                 onClick={() => handleCategoryClick(cat.slug)}
-                                className={"rounded-full px-5 py-2.5 text-sm font-semibold transition-all duration-300 " + (activeSlug === cat.slug ? "bg-foreground text-background shadow-md" : "bg-muted/50 text-foreground hover:bg-muted")}
+                                className={
+                                    "rounded-full px-5 py-2.5 text-sm font-semibold transition-all duration-300 " +
+                                    (activeSlug === cat.slug
+                                        ? "bg-gradient-to-r from-primary to-secondary text-white shadow-md glow-primary"
+                                        : "glass text-foreground hover:bg-primary/10")
+                                }
                             >
                                 {cat.name}
                             </button>
                         ))}
                     </div>
 
-                    <div className="flex items-center gap-3 shrink-0 bg-muted/30 p-1.5 rounded-2xl border border-border/50">
-                        <div className="pl-3 text-muted-foreground">
+                    <div className="flex items-center gap-3 shrink-0 glass p-1.5 rounded-2xl">
+                        <div className="pl-3 text-primary">
                             <SlidersHorizontal className="h-4 w-4" />
                         </div>
                         <Select value={sort} onValueChange={(value) => setSort(value as typeof sort)}>
@@ -96,7 +111,7 @@ export default function Catalogue() {
                     <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
                         {Array.from({ length: 4 }).map((_, i) => (
                             <div key={i} className="animate-pulse">
-                                <div className="aspect-[4/5] rounded-2xl bg-muted" />
+                                <div className="aspect-[4/5] rounded-3xl bg-muted" />
                                 <div className="mt-4 h-4 w-3/4 rounded bg-muted" />
                                 <div className="mt-2 h-4 w-1/2 rounded bg-muted" />
                             </div>
@@ -104,8 +119,8 @@ export default function Catalogue() {
                     </div>
                 ) : sortedProducts.length === 0 ? (
                     <div className="flex flex-col items-center justify-center gap-4 py-32">
-                        <div className="rounded-full bg-muted/50 p-6 border border-border/50">
-                            <PackageX className="h-10 w-10 text-muted-foreground/50" />
+                        <div className="glass rounded-full p-6">
+                            <PackageX className="h-10 w-10 text-primary/60" />
                         </div>
                         <p className="text-base font-medium text-muted-foreground">
                             Aucun produit trouve dans cette categorie.
@@ -125,7 +140,7 @@ export default function Catalogue() {
                                 >
                                     <Link
                                         to={"/produit/" + product.id}
-                                        className="group block overflow-hidden rounded-2xl bg-card border border-border/40 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:shadow-premium"
+                                        className="group block overflow-hidden rounded-3xl glass shadow-sm transition-all duration-500 hover:-translate-y-2 hover:glow-primary"
                                     >
                                         <div className="aspect-[4/5] overflow-hidden bg-muted/30">
                                             <img
@@ -135,13 +150,13 @@ export default function Catalogue() {
                                             />
                                         </div>
                                         <div className="p-5 flex flex-col gap-1">
-                                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary/70">
                                                 {product.categories?.name}
                                             </span>
                                             <h3 className="font-display text-lg text-foreground group-hover:text-primary transition-colors">
                                                 {product.name}
                                             </h3>
-                                            <p className="font-display text-xl text-primary font-medium mt-1">
+                                            <p className="font-display text-xl font-semibold text-gradient mt-1">
                                                 {product.price.toLocaleString()} FCFA
                                             </p>
                                         </div>
