@@ -332,6 +332,7 @@ export type ProductInput = {
     category_id: number;
     image: string;
     featured?: boolean;
+    in_stock?: boolean;
 };
 
 export async function createProduct(input: ProductInput) {
@@ -364,6 +365,17 @@ export async function toggleFeatured(product: ProductDB) {
     const { data, error } = await supabase
         .from("products")
         .update({ featured: !product.featured })
+        .eq("id", product.id)
+        .select()
+        .single();
+    if (error) throw error;
+    return data;
+}
+
+export async function toggleStock(product: ProductDB) {
+    const { data, error } = await supabase
+        .from("products")
+        .update({ in_stock: !(product.in_stock !== false) })
         .eq("id", product.id)
         .select()
         .single();
@@ -411,12 +423,13 @@ export async function deleteBlogPost(id: number) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Fonctions - Parametres du site (logo, video de fond)               */
+/* Fonctions - Parametres du site (logo, video de fond, nom)          */
 /* ------------------------------------------------------------------ */
 
 export type SiteSettingsInput = {
     logo_url?: string | null;
     hero_video_url?: string | null;
+    shop_name?: string | null;
 };
 
 export async function updateSiteSettings(input: SiteSettingsInput) {

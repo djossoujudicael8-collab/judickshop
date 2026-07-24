@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Package, Tag, FileText, Palette, Plus, Pencil, Trash2, Image as ImageIcon, Loader2, Sparkles, Star } from "lucide-react";
+import { LogOut, Package, Tag, FileText, Palette, Plus, Pencil, Trash2, Image as ImageIcon, Loader2, Sparkles, Star, PackageCheck, PackageX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +26,7 @@ import {
     deleteBlogPost,
     updateSiteSettings,
     toggleFeatured,
+    toggleStock,
 } from "@/hooks/useSupabase";
 import type { ProductDB, CategoryDB, BlogPostDB } from "@/lib/supabase";
 import ProductFormDialog from "@/components/admin/ProductFormDialog";
@@ -58,7 +59,7 @@ export default function AdminDashboard() {
                         </div>
                         <div className="flex flex-col leading-tight">
                             <span className="font-display text-lg font-semibold text-foreground">
-                                JA Jí Yoū
+                                Tableau de bord
                             </span>
                             <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
                                 Espace administrateur
@@ -136,11 +137,13 @@ function StatsRow() {
     const { categories } = useAdminCategories();
     const { posts } = useAdminBlogPosts();
 
+    const outOfStockCount = products.filter((p) => p.in_stock === false).length;
+
     const stats = [
         { icon: Package, label: "Produits actifs", value: products.length },
         { icon: Tag, label: "Categories", value: categories.length },
         { icon: FileText, label: "Articles publies", value: posts.length },
-        { icon: Sparkles, label: "Commandes", value: 0 },
+        { icon: PackageX, label: "En rupture de stock", value: outOfStockCount },
     ];
 
     return (
@@ -170,17 +173,24 @@ function StatsRow() {
 
 function SectionCard({
     title,
+    description,
     action,
     children,
 }: {
     title: string;
+    description?: string;
     action?: React.ReactNode;
     children: React.ReactNode;
 }) {
     return (
         <div className="overflow-hidden rounded-3xl glass shadow-sm">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/30 px-6 py-5 md:px-8">
-                <h3 className="font-display text-xl font-bold text-foreground">{title}</h3>
+            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-white/30 px-6 py-5 md:px-8">
+                <div>
+                    <h3 className="font-display text-xl font-bold text-foreground">{title}</h3>
+                    {description && (
+                        <p className="mt-1 max-w-lg text-sm text-muted-foreground">{description}</p>
+                    )}
+                </div>
                 {action}
             </div>
             <div className="bg-background/40">{children}</div>
@@ -199,6 +209,8 @@ function ProductsTab() {
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [deletingProduct, setDeletingProduct] = useState<ProductDB | null>(null);
     const [deleting, setDeleting] = useState(false);
+
+    const [stockSavingId, setStockSavingId] = useState<number | null>(null);
 
     function openCreate() {
         setEditingProduct(null);
@@ -230,9 +242,22 @@ function ProductsTab() {
         }
     }
 
+    async function handleToggleStock(product: ProductDB) {
+        setStockSavingId(product.id);
+        try {
+            await toggleStock(product);
+            refetch();
+        } catch {
+            showToast("error", "Impossible de mettre a jour le stock.");
+        } finally {
+            setStockSavingId(null);
+        }
+    }
+
     return (
         <SectionCard
             title="Gestion des produits"
+            description="Ajoutez, modifiez et gerez la disponibilite (stock) de chaque produit."
             action={
                 <Button
                     size="sm"
@@ -254,7 +279,6 @@ function ProductsTab() {
                 </div>
             ) : (
                 <>
-                    {/* Vue mobile : liste de cartes */}
                     <ul className="divide-y divide-white/20 sm:hidden">
                         {products.map((product) => (
                             <li key={product.id} className="flex items-center gap-3 px-4 py-4">
@@ -266,7 +290,7 @@ function ProductsTab() {
                                         <p className="truncate font-bold text-foreground">{product.name}</p>
                                         {product.featured && <Star className="h-3.5 w-3.5 shrink-0 fill-secondary text-secondary" />}
                                     </div>
-                                    <div className="mt-1 flex items-center gap-2">
+                                    <div className="mt-1 flex flex-wrap items-center gap-2">
                                         <span className="inline-flex items-center rounded-full bg-secondary/10 px-2 py-0.5 text-[11px] font-semibold text-secondary">
                                             {product.categories?.name || "-"}
                                         </span>
@@ -274,6 +298,25 @@ function ProductsTab() {
                                             {product.price.toLocaleString()} FCFA
                                         </span>
                                     </div>
+                                    <button
+                                        onClick={() => handleToggleStock(product)}
+                                        disabled={stockSavingId === product.id}
+                                        className={
+                                            "mt-1.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold transition-colors disabled:opacity-50 " +
+                                            (product.in_stock !== false
+                                                ? "bg-success/10 text-success"
+                                                : "bg-destructive/10 text-destructive")
+                                        }
+                                    >
+                                        {stockSavingId === product.id ? (
+                                            <Loader2 className="h-3 w-3 animate-spin" />
+                                        ) : product.in_stock !== false ? (
+                                            <PackageCheck className="h-3 w-3" />
+                                        ) : (
+                                            <PackageX className="h-3 w-3" />
+                                        )}
+                                        {product.in_stock !== false ? "En stock" : "Rupture"}
+                                    </button>
                                 </div>
                                 <div className="flex shrink-0 items-center gap-1">
                                     <Button variant="ghost" size="icon" className="rounded-full hover:bg-primary/10" onClick={() => openEdit(product)}>
@@ -287,7 +330,6 @@ function ProductsTab() {
                         ))}
                     </ul>
 
-                    {/* Vue desktop : tableau */}
                     <div className="hidden sm:block">
                         <Table>
                             <TableHeader>
@@ -295,6 +337,7 @@ function ProductsTab() {
                                     <TableHead className="px-6 py-4 font-semibold text-foreground md:px-8">Produit</TableHead>
                                     <TableHead className="font-semibold text-foreground">Categorie</TableHead>
                                     <TableHead className="font-semibold text-foreground">Prix</TableHead>
+                                    <TableHead className="font-semibold text-foreground">Stock</TableHead>
                                     <TableHead className="text-right px-6 font-semibold text-foreground md:px-8">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -321,6 +364,27 @@ function ProductsTab() {
                                         </TableCell>
                                         <TableCell className="font-bold text-gradient">
                                             {product.price.toLocaleString()} FCFA
+                                        </TableCell>
+                                        <TableCell>
+                                            <button
+                                                onClick={() => handleToggleStock(product)}
+                                                disabled={stockSavingId === product.id}
+                                                className={
+                                                    "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition-colors disabled:opacity-50 " +
+                                                    (product.in_stock !== false
+                                                        ? "bg-success/10 text-success hover:bg-success/20"
+                                                        : "bg-destructive/10 text-destructive hover:bg-destructive/20")
+                                                }
+                                            >
+                                                {stockSavingId === product.id ? (
+                                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                                ) : product.in_stock !== false ? (
+                                                    <PackageCheck className="h-3 w-3" />
+                                                ) : (
+                                                    <PackageX className="h-3 w-3" />
+                                                )}
+                                                {product.in_stock !== false ? "En stock" : "Rupture"}
+                                            </button>
                                         </TableCell>
                                         <TableCell className="text-right px-6 md:px-8">
                                             <div className="flex items-center justify-end gap-2">
@@ -407,6 +471,7 @@ function CategoriesTab() {
     return (
         <SectionCard
             title="Gestion des categories"
+            description="Organisez votre catalogue par univers de produits."
             action={
                 <Button
                     size="sm"
@@ -428,7 +493,6 @@ function CategoriesTab() {
                 </div>
             ) : (
                 <>
-                    {/* Vue mobile : liste de cartes */}
                     <ul className="divide-y divide-white/20 sm:hidden">
                         {categories.map((cat) => (
                             <li key={cat.id} className="flex items-center gap-3 px-4 py-4">
@@ -451,7 +515,6 @@ function CategoriesTab() {
                         ))}
                     </ul>
 
-                    {/* Vue desktop : tableau */}
                     <div className="hidden sm:block">
                         <Table>
                             <TableHeader>
@@ -550,6 +613,7 @@ function BlogTab() {
     return (
         <SectionCard
             title="Articles de blog"
+            description="Publiez du contenu pour animer votre boutique et rassurer vos clients."
             action={
                 <Button
                     size="sm"
@@ -571,7 +635,6 @@ function BlogTab() {
                 </div>
             ) : (
                 <>
-                    {/* Vue mobile : liste de cartes */}
                     <ul className="divide-y divide-white/20 sm:hidden">
                         {posts.map((post) => (
                             <li key={post.id} className="flex items-center gap-3 px-4 py-4">
@@ -599,7 +662,6 @@ function BlogTab() {
                         ))}
                     </ul>
 
-                    {/* Vue desktop : tableau */}
                     <div className="hidden sm:block">
                         <Table>
                             <TableHeader>
@@ -746,6 +808,7 @@ function FeaturedTab() {
 
 function AppearanceTab() {
     const { settings, loading, refetch } = useAdminSiteSettings();
+    const [shopName, setShopName] = useState("");
     const [logoUrl, setLogoUrl] = useState("");
     const [videoUrl, setVideoUrl] = useState("");
     const [saving, setSaving] = useState(false);
@@ -753,6 +816,7 @@ function AppearanceTab() {
 
     useEffect(() => {
         if (settings) {
+            setShopName(settings.shop_name || "");
             setLogoUrl(settings.logo_url || "");
             setVideoUrl(settings.hero_video_url || "");
         }
@@ -762,6 +826,7 @@ function AppearanceTab() {
         setSaving(true);
         try {
             await updateSiteSettings({
+                shop_name: shopName || null,
                 logo_url: logoUrl || null,
                 hero_video_url: videoUrl || null,
             });
@@ -785,10 +850,29 @@ function AppearanceTab() {
     return (
         <div className="flex flex-col gap-8 max-w-xl">
             <div className="rounded-3xl glass p-8 shadow-sm">
+                <h3 className="font-display text-2xl font-bold mb-2">Nom de la boutique</h3>
+                <p className="text-sm text-muted-foreground mb-6">
+                    Ce nom s'affiche dans l'ecran de bienvenue au chargement du site, et remplace
+                    le texte par defaut dans l'en-tete et le pied de page si aucun logo n'est defini.
+                </p>
+
+                <div className="flex flex-col gap-2">
+                    <Label htmlFor="shop-name">Nom affiche</Label>
+                    <Input
+                        id="shop-name"
+                        value={shopName}
+                        onChange={(e) => setShopName(e.target.value)}
+                        placeholder="JA Jí Yoū"
+                        className="h-12 rounded-xl text-base"
+                    />
+                </div>
+            </div>
+
+            <div className="rounded-3xl glass p-8 shadow-sm">
                 <h3 className="font-display text-2xl font-bold mb-2">Logo de la boutique</h3>
                 <p className="text-sm text-muted-foreground mb-6">
-                    Ce logo remplacera le texte "JA Jí Yoū" dans l'en-tete et le pied de page du site.
-                    Sans logo, le texte s'affiche automatiquement.
+                    Ce logo remplacera le texte de la boutique dans l'en-tete, le pied de page et
+                    l'ecran de bienvenue. Sans logo, le nom personnalise s'affiche automatiquement.
                 </p>
 
                 <ImageUploadField
