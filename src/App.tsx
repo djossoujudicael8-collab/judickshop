@@ -22,9 +22,10 @@ export default function App() {
 
   // Petit ecran de bienvenue au premier chargement de la page (pas lors
   // de la simple navigation interne, App ne remonte qu'a un vrai reload).
+  // Duree totale : 2,5s (1,8s affichage plein + 0,7s de transition de sortie).
   useEffect(() => {
-    const exitTimer = setTimeout(() => setSplashPhase("exiting"), 1300);
-    const doneTimer = setTimeout(() => setSplashPhase("done"), 2000);
+    const exitTimer = setTimeout(() => setSplashPhase("exiting"), 1800);
+    const doneTimer = setTimeout(() => setSplashPhase("done"), 2500);
     return () => {
       clearTimeout(exitTimer);
       clearTimeout(doneTimer);

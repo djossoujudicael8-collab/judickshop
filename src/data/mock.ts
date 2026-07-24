@@ -14,6 +14,7 @@ export type Product = {
     categoryId: number;
     categoryName: string;
     sku: string;
+    inStock?: boolean;
 };
 
 export type BlogPost = {
